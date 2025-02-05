@@ -1,12 +1,11 @@
 services:
-  python_app:
+  dnsfilter:
     image: python:bookworm
-    container_name: python_container
     volumes:
-      - ./app:/usr/src/app  # Mount the app directory
+      - ./app:/usr/src/app  
       - /etc/bind/zones:/usr/src/zones
-    working_dir: /usr/src/app  # Set the working directory to where the script is mounted
-    entrypoint: /bin/bash -c "pip install boto3; tail -f /dev/null"  # Install dependencies but do nothing after
+    working_dir: /usr/src/app  
+    entrypoint: /bin/bash -c "pip install boto3; tail -f /dev/null"  
     restart: unless-stopped
     environment:
       TZ: Europe/Paris
