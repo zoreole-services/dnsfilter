@@ -1,6 +1,7 @@
 services:
   dnsfilter:
     image: python:bookworm
+    container_name: dnsfilter
     volumes:
       - ./app:/usr/src/app  
       - /etc/bind/zones:/usr/src/zones
