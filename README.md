@@ -51,20 +51,21 @@ Before you begin, ensure you have the following:
 
     You'll need to add those lines to your named.conf.local file:
 
-    ```zone "rpz" {
+```zone "rpz" {
     type master;
     file "/etc/bind/zones/rpz.db";  # Replace with the actual path
     allow-query { none; };       # RPZ zones should not be directly queried
-};
-    ```
-    Then you’ll need to add those parameters to the named.conf.options file:
+    };
+```
+    
+   Then you’ll need to add those parameters to the named.conf.options file:
 
 ```recursion yes;
     allow-query { any; };
     response-policy { zone "rpz"; };
 ```
 
-    For more advanced configurations and additional parameters, refer to the documentation of Bind9.
+   For more advanced configurations and additional parameters, refer to the documentation of Bind9.
 
 
 3. **Crontab configuration**:
