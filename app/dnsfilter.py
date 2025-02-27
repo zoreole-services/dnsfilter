@@ -41,8 +41,8 @@ def get_domain_list():
 # Function to generate RPZ zone file
 def generate_rpz_file(domains):
     try:
-        # Get the current serial in YYYYMMDDnn format
-        serial = datetime.now().strftime("%Y%m%d%H%M")
+        # Get the current serial in YYMMDDnn format
+        serial = datetime.now().strftime("%y%m%d%H%M")
         # Write the RPZ zone file
         with open(RPZ_FILE_PATH, 'w') as rpz_file:
             rpz_file.write(f"$TTL {RPZ_TTL}\n")
