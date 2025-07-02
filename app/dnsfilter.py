@@ -70,4 +70,5 @@ if __name__ == '__main__':
         print(f"Retrieved {len(domain_list)} domains.")
         generate_rpz_file(domain_list)
     else:
-        print("No domains retrieved. Check S3 configuration or data.")
+        print("No domains retrieved.")
+        generate_rpz_file(domain_list)
