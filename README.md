@@ -1,6 +1,6 @@
 # DNS Filter
 
-**DNS Filter** is a [Python](https://www.python.org) package that retrieves a list of domains from a file stored in an [S3](https://aws.amazon.com/s3/) bucket using the [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) library, filters them, and converts them into a rpz filethat will be taken in account the DNS servers.
+**DNS Filter** is a [Python](https://www.python.org) package that retrieves a list of domains from a file stored in an [S3](https://aws.amazon.com/s3/) bucket using the [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) library, filters them, and converts them into a rpz file that will be taken in account the DNS servers.
 
 **DNS Filter** operates within a [Docker](https://www.docker.com) container, making it easy to deploy and manage.
 
