@@ -342,6 +342,7 @@ docker  compose  build  dnsfilter
 
 docker  compose  down && docker  compose  up  -d
 
+```
 
 ## License
 
