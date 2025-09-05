@@ -16,3 +16,7 @@ services:
       S3_OBJECT_KEY_PATH: "path/to/s3/object/key"
       S3_OBJECT_FILE_NAME: "domains_to_block_tests.txt"
       AWS_REGION: "eu-west-1"
+      BLUECAT_USER: "enter-bluecat-username" (optional)
+      BLUECAT_PWD: "enter-bluecat-password" (optional)
+      BLUECAT_IPADDR: "enter-bluecat-ip-adress" (optional)
+      BLUECAT_TARGET_BDDS: "enter-bluecat-target-bdds-name"(optional)
