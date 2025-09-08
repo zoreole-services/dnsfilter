@@ -277,15 +277,19 @@ To configure DNS Filter Bluecat, you'll need to add the following environment va
 | `BLUECAT_PWD`  | - | Yes | Your secret password secret accessing Bluecat BAM server.|
 | `BLUECAT_IPADDR`  | - | Yes | IP address of Bluecat BAM server.|
 | `BLUECAT_TARGET_BDDS` | - | No | The name of the target Bluecat BDDS servers. |
+| `BLUECAT_TENANT_NAME` | - | No | The name of the target Bluecat BAM tenant configuration. |
 
 
 
 You can add these environment variables to the `environment` section of the `dnsfilter` service in the `docker-compose.yaml` file.
 
 
-2.  **Crontab configuration**:
+2.  **Bluecat configuration**:
 
-  
+Ensure that an RP Zone is created (DNS > DNS View > RP Zones) and that the policy (identified as ""dnsfilter_canal") created by the script is attached to it.
+
+3.  **Crontab configuration**:
+
 
 We recommend to launch « crontab -e » command and edit the crontab file as following:
 
@@ -337,12 +341,11 @@ docker  compose  down
   
 
 ```bash
-
 docker  compose  build  dnsfilter
 
 docker  compose  down && docker  compose  up  -d
-
 ```
+
 
 ## License
 
