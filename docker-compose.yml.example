@@ -1,7 +1,6 @@
 services:
   dnsfilter:
     image: python:bookworm
-    container_name: dnsfilter
     volumes:
       - ./app:/usr/src/app  
       - /etc/bind/zones:/usr/src/zones
@@ -20,3 +19,4 @@ services:
       BLUECAT_PWD: "enter-bluecat-password" (optional)
       BLUECAT_IPADDR: "enter-bluecat-ip-adress" (optional)
       BLUECAT_TARGET_BDDS: "enter-bluecat-target-bdds-name"(optional)
+      BLUECAT_TENANT_NAME: "enter-bluecat-tenant-name"(optional)
