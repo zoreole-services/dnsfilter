@@ -11,6 +11,7 @@ BLUECAT_IPADDR = os.getenv("BLUECAT_IPADDR")
 BLUECAT_USER = os.getenv("BLUECAT_USER")
 BLUECAT_PWD = os.getenv("BLUECAT_PWD")
 BLUECAT_TARGET_BDDS = os.getenv("BLUECAT_TARGET_BDDS")
+BLUECAT_TENANT_NAME = os.getenv("BLUECAT_TENANT_NAME")
 BAM_URL = f"http://{BLUECAT_IPADDR}/api/v2"  
 
 
@@ -103,17 +104,17 @@ def get_collection_id(token):
         "accept": "application/hal+json",
         "Content-Type": "application/hal+json"
     }
-    r = requests.get(url=f"{BAM_URL}/configurations", headers=headers, verify=False)
+    r = requests.get(url=f"{BAM_URL}/configurations?fields=id%2Cname", headers=headers, verify=False)
 
  
     resp = r.json()
-
     if resp.get("data") and len(resp["data"]) > 0:
-        collection_id = resp["data"][0]["id"]
+        collection = resp["data"]
+
     else:
         logging.debug("No configuration found")
 
-    return collection_id
+    return collection
 
 # Function to get the RP Zone ID (if exists)
 def get_rpz(token):
@@ -265,63 +266,74 @@ def main():
     
     logging.debug(f"Token: {token}")
 
-    # Get the RP Zone ID and the Tenant ID (Global configuration ID)
+    # Get the RP Zone ID and Tenant list (Global configuration ID)
     count,rpz_collection_id = get_rpz(token)
-    tenant_id = get_collection_id(token)
+    tenant_list_bam = get_collection_id(token)
+
+    # Fetch the Tenant list defined in the environment variable
+    tenant_list_env = os.getenv("BLUECAT_TENANT_NAME")
+
+    names = [n.strip() for n in tenant_list_env.split(",")]
+
+    # On filtre et on récupère les IDs
+    tenant_ids = [item["id"] for item in tenant_list_bam if item["name"] in names]
+
 
     logging.debug(f" >>> Number of RPZ: {count}")
 
+    for tenant_id in tenant_ids:
 
-    # If RPZ Zone doesn't exist we create it
-    if(count == 0):
-        print("tenant id", tenant_id)
-        logging.debug(f" >>> Tenant (Global configuration) ID: {tenant_id}")
+        # If RPZ Zone doesn't exist we create it
+        if(count == 0):
+            print("tenant id", tenant_id)
+            logging.debug(f" >>> Tenant (Global configuration) ID: {tenant_id}")
 
-        rpz_collection_id = create_rpz(token,tenant_id)
+            rpz_collection_id = create_rpz(token,tenant_id)
 
-    # Fetch the list of domains (Policy items) on Bluecat BAM server
-    bluecat_domain_list = get_policy_items(token,rpz_collection_id)
-  
-    # Fetch the list of domains on AWS
-    aws_domain_list = get_domain_list()
+        # Fetch the list of domains (Policy items) on Bluecat BAM server
+        bluecat_domain_list = get_policy_items(token,rpz_collection_id)
     
-    # Fetch the domain list that exist on AWS but not on Bluecat server (to add)
-    add_domain_list = aws_domain_list - bluecat_domain_list
+        # Fetch the list of domains on AWS
+        aws_domain_list = get_domain_list()
+        
+        # Fetch the domain list that exist on AWS but not on Bluecat server (to add)
+        add_domain_list = aws_domain_list - bluecat_domain_list
 
-    # Fetch the domain list that exist on Bluecat server but not on AWS (to delete)
-    delete_domain_list = bluecat_domain_list - aws_domain_list
+        # Fetch the domain list that exist on Bluecat server but not on AWS (to delete)
+        delete_domain_list = bluecat_domain_list - aws_domain_list
 
-    logging.info(f" >>> Domain list added: {add_domain_list}")
-    logging.info(f" >>> Domain list deleted: {delete_domain_list}")
+        logging.info(f" >>> Domain list added: {add_domain_list}")
+        logging.info(f" >>> Domain list deleted: {delete_domain_list}")
 
-    # If there's domains to add, add them
-    if (len(add_domain_list) > 0 ):
-        create_policy_items(token,rpz_collection_id,add_domain_list)
-    # If there's domains to delete, delete them
-    if (len(delete_domain_list) > 0 ):
-        delete_policy_items(token,delete_domain_list)
-    
+        # If there's domains to add, add them
+        if (len(add_domain_list) > 0 ):
+            create_policy_items(token,rpz_collection_id,add_domain_list)
+        # If there's domains to delete, delete them
+        if (len(delete_domain_list) > 0 ):
+            delete_policy_items(token,delete_domain_list)
+        
 
-    # Fetch the list of BDDS servers managed by the BAM    
-    bluecat_server_list = get_server(token)
+        # Fetch the list of BDDS servers managed by the BAM    
+        bluecat_server_list = get_server(token)
 
-    # Fetch the BDDS server list defined in the environment variable
-    servers_env = os.getenv("BLUECAT_TARGET_BDDS", "")
-    target_names = [s.strip() for s in servers_env.split(",") if s.strip()]
+        # Fetch the BDDS server list defined in the environment variable
+        servers_env = os.getenv("BLUECAT_TARGET_BDDS", "")
+        target_names = [s.strip() for s in servers_env.split(",") if s.strip()]
 
-    # Intersection → only keep the BDDS IDs whose names match the ones defined in the environment variable
-    if (BLUECAT_TARGET_BDDS == "ALL"):
-        bdds_ids = [srv_id for srv_id, _ in bluecat_server_list]
-    else:
-        bdds_ids = [srv_id for srv_id, srv_name in bluecat_server_list if srv_name in target_names]
-        if(len(bdds_ids) == 0):
-            print("The target bdds servers doesn't match the bdds servers configured")
-    
-    logging.debug(f" >>> BDDS IDs : {bdds_ids}")
+        # Intersection → only keep the BDDS IDs whose names match the ones defined in the environment variable
+        if (BLUECAT_TARGET_BDDS == "ALL"):
+            bdds_ids = [srv_id for srv_id, _ in bluecat_server_list]
+        else:
+            bdds_ids = [srv_id for srv_id, srv_name in bluecat_server_list if srv_name in target_names]
+            if(len(bdds_ids) == 0):
+                print("The target bdds servers doesn't match the bdds servers configured")
+        
+        logging.debug(f" >>> BDDS IDs : {bdds_ids}")
 
-    # Deploy the configuration on the BDDS servers
-    if (len(add_domain_list) > 0 or len(delete_domain_list) > 0):
-        deploy(token,bdds_ids)
+        # Deploy the configuration on the BDDS servers
+        if (len(add_domain_list) > 0 or len(delete_domain_list) > 0):
+            deploy(token,bdds_ids)
+            logging.info(f"Configuration deployed")
 
 
 if __name__ == "__main__":
