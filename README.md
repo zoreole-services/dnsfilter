@@ -60,32 +60,19 @@ To configure DNS Filter, you'll need to add the following environment variables:
 
   
 
-| Variable Name | Default Value | Required | Description |
-
-|------------------------|------------------|----------|--------------------------------------------------|
-
+| Variable Name | Default Value | Required |Description |
+|--|--| -- |--|
+|  |  |
 | `AWS_ACCESS_KEY_ID` | - | Yes | Your AWS access key ID for accessing the S3 bucket. |
-
 | `AWS_SECRET_ACCESS_KEY`| - | Yes | Your AWS secret access key for accessing the S3 bucket. |
-
 | `AWS_REGION` | `eu-west-1` | No | The AWS region where the S3 bucket is located. |
-
 | `S3_BUCKET_NAME` | - | Yes | The name of the S3 bucket where the IP list is stored. |
-
 | `S3_OBJECT_KEY_PATH` | - | Yes | The path within the S3 bucket where IP list is located. |
-
 | `S3_OBJECT_FILE_NAME` | - | Yes | The name of the file containing IP addresses to blackhole. |
-
 | `MY_SUPERNETS` | - | Yes | Your public network's supernets. |
-
 | `MAX_PREFIXES` | `2000` | No | Maximum number of routes to accept. |
-
 | `BLACKHOLE_COMMUNITY` | `65535:666` | No | BGP community value for blackhole routes. |
-
 | `POLLING_INTERVAL` | `30` | No | Interval (in seconds) for polling changes from S3 bucket. |
-
-  
-
 
 
 
