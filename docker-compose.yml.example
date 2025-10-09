@@ -1,22 +1,25 @@
+---
 services:
   dnsfilter:
     image: python:bookworm
+    container_name: dnsfilter
+    working_dir: /usr/src/app
     volumes:
-      - ./app:/usr/src/app  
+      - ./app:/usr/src/app
       - /etc/bind/zones:/usr/src/zones
-    working_dir: /usr/src/app  
-    entrypoint: /bin/bash -c "pip install boto3; tail -f /dev/null"  
+    entrypoint: >
+      /bin/bash -c "pip install boto3 && tail -f /dev/null"
     restart: unless-stopped
     environment:
-      TZ: Europe/Paris
+      TZ: "Europe/Paris"
       AWS_ACCESS_KEY_ID: "ENTER-ACCESS-KEY-ID"
       AWS_SECRET_ACCESS_KEY: "ENTER-ACCESS-KEY"
-      S3_BUCKET_NAME: "enter-buckname"
+      S3_BUCKET_NAME: "enter-bucket-name"
       S3_OBJECT_KEY_PATH: "path/to/s3/object/key"
       S3_OBJECT_FILE_NAME: "domains_to_block_tests.txt"
       AWS_REGION: "eu-west-1"
-      BLUECAT_USER: "enter-bluecat-username" (optional)
-      BLUECAT_PWD: "enter-bluecat-password" (optional)
-      BLUECAT_IPADDR: "enter-bluecat-ip-adress" (optional)
-      BLUECAT_TARGET_BDDS: "enter-bluecat-target-bdds-name"(optional)
-      BLUECAT_TENANT_NAME: "enter-bluecat-tenant-name"(optional)
+      BLUECAT_USER: "enter-bluecat-username"        # optional
+      BLUECAT_PWD: "enter-bluecat-password"         # optional
+      BLUECAT_IPADDR: "enter-bluecat-ip-address"    # optional
+      BLUECAT_TARGET_BDDS: "enter-bluecat-target-bdds-name"  # optional
+      BLUECAT_TENANT_NAME: "enter-bluecat-tenant-name"       # optional
