@@ -1,0 +1,22 @@
+; UPDATE=0
+$TTL 60
+@   IN SOA ns1.rpz.local. admin.rpz.local. (
+        2025090901 ; serial
+        3H         ; refresh
+        1H         ; retry
+        1W         ; expiry
+        1H )       ; minimum
+
+    IN NS ns1.rpz.local.
+ns1 IN A 127.0.0.1
+
+; tes règles RPZ
+panel.globesrv.net   CNAME .
+iptvmedia.live       CNAME .
+b.delta2022.xyz      CNAME .
+sub.flood-wall.net   CNAME .
+es.greatott.me       CNAME .
+line.krooba.cc       CNAME .
+hosamir.net          CNAME .
+my.amazing-tv.com    CNAME .
+lg.peces.biz         CNAME .

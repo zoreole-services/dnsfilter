@@ -1,22 +1,31 @@
 services:
   dnsfilter:
-    image: python:bookworm
+    build: .
+    container_name: dnsfilter
     volumes:
-      - ./app:/usr/src/app  
-      - /etc/bind/zones:/usr/src/zones
-    working_dir: /usr/src/app  
-    entrypoint: /bin/bash -c "pip install boto3; tail -f /dev/null"  
+      # SOLUTION BINDLOCAL & BINDTRANSFER
+      - /etc/bind/dnsfilter_zones:/usr/src/app/zones 
+
     restart: unless-stopped
     environment:
-      TZ: Europe/Paris
+      TZ: Europe/Paris 
+
+      # NECESSARY ENVIRONMENT VARIABLE
       AWS_ACCESS_KEY_ID: "ENTER-ACCESS-KEY-ID"
       AWS_SECRET_ACCESS_KEY: "ENTER-ACCESS-KEY"
-      S3_BUCKET_NAME: "enter-buckname"
+      S3_BUCKET_NAME: "ENTER-BUCKET-NAME"
       S3_OBJECT_KEY_PATH: "path/to/s3/object/key"
       S3_OBJECT_FILE_NAME: "domains_to_block_tests.txt"
-      AWS_REGION: "eu-west-1"
-      BLUECAT_USER: "enter-bluecat-username" (optional)
-      BLUECAT_PWD: "enter-bluecat-password" (optional)
-      BLUECAT_IPADDR: "enter-bluecat-ip-adress" (optional)
-      BLUECAT_TARGET_BDDS: "enter-bluecat-target-bdds-name"(optional)
-      BLUECAT_TENANT_NAME: "enter-bluecat-tenant-name"(optional)
+      AWS_REGION: "eu-west-1" 
+      SOLUTION_IDENTIFIER: "SOLUTION-NAME(S)"
+      EXECUTION_INTERVAL: 30 
+
+      # OPTIONAL ENVIRONMENT VARIABLE - SOLUTION BINDTRANSFER
+      BIND_SLAVE_IPADDR: "SLAVE SERVER IP ADDRESS"
+
+      # OPTIONAL ENVIRONMENT VARIABLE - SOLUTION BLUECATAPI
+      BLUECAT_USER: "BLUECAT API USERNAME"
+      BLUECAT_PWD: "BLUECAT API USER PASSWORD"
+      BLUECAT_IPADDR: "BLUECAT SERVER IP ADDRESS"
+      BLUECAT_TARGET_BDDS: "BLUECAT BDDS SERVER(S)"
+      BLUECAT_TENANT_NAME: "BLUECAT GLOBAL CONFIGURATION NAME"

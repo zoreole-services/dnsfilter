@@ -1,0 +1,5 @@
+# ========================
+# Docker / Compose
+# ========================
+# Ignore local compose overrides
+docker-compose.yml
