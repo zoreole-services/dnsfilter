@@ -1,4 +1,4 @@
-FROM alpine:3.22.1
+FROM alpine:3.23.0
 
 LABEL maintainer="Alexandre GIRARD <alexandre@zoreole.com>, Benjamin PAYET <benjamin@zoreole.com>, Tristan SCANDELLA <tristan@zoreole.com>"
 LABEL version="1.0.0"
