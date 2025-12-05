@@ -62,7 +62,7 @@ Before installation, ensure the following components are available:
 | `S3_BUCKET_NAME` | - | Yes | Name of S3 bucket |
 | `S3_OBJECT_KEY_PATH` | - | Yes | Path to object in S3 |
 | `S3_OBJECT_FILE_NAME` | - | Yes | File name containing domains |
-| `EXECUTION_INTERVAL` | `30` | Yes | Polling interval (minutes) |
+| `EXECUTION_INTERVAL` | `30` | Yes | Polling interval (seconds) |
 | `SOLUTION_IDENTIFIER` | - | Yes | Solution names |
 
 

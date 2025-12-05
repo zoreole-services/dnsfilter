@@ -276,7 +276,7 @@ def get_interval_env() -> str:
         raise ConfigError("EXECUTION_INTERVAL environment variable is not set.")
 
     try:
-        return int(EXECUTION_INTERVAL) * 60
+        return int(EXECUTION_INTERVAL)
     except ValueError:
         raise ConfigError("EXECUTION_INTERVAL must be a valid integer.")
 

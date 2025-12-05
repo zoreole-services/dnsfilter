@@ -117,7 +117,7 @@ def get_bind_env():
 
 
 
-def generate_rpz_file(domains: list[str], rpz_file_path: str = "/usr/src/app/zones/rpz.db")  -> None:
+def generate_rpz_file(domains: list[str], DNS_TTL: int, rpz_file_path: str = "/usr/src/app/zones/rpz.db") -> None:
     """
     Generate an RPZ (Response Policy Zone) file for BIND.
 
@@ -129,12 +129,11 @@ def generate_rpz_file(domains: list[str], rpz_file_path: str = "/usr/src/app/zon
         BindRPZError: Raised if the RPZ file cannot be written due to an I/O error or other unexpected exceptions.
     """
     try:
-        RPZ_TTL = 60  
         serial = datetime.now().strftime("%y%m%d%H%M")
         # Write the RPZ zone file
         with open(rpz_file_path, 'w') as rpz_file:
             rpz_file.write(f'; UPDATE: 1\n')
-            rpz_file.write(f"$TTL {RPZ_TTL}\n")
+            rpz_file.write(f"$TTL {DNS_TTL}\n")
             rpz_file.write(f"@            IN    SOA  localhost. root.localhost.  (\n")
             rpz_file.write(f"                      {serial}   ; serial\n")
             rpz_file.write(f"                      2M  ; refresh\n")

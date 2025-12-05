@@ -195,7 +195,7 @@ def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
         logging.error(f"Unexpected error while fetching RPZ : {e}")
         raise BlueCatAPIError(f"Unexpected error: {e}")
 
-def create_rpz(token: str, collection_id: str, BAM_URL: str) -> str:
+def create_rpz(token: str, collection_id: str, BAM_URL: str, DNS_TTL: int) -> str:
     """
     Creates a new Response Policy Zone (RPZ) named 'dnsfilter_canal' in BlueCat BAM.
 
@@ -220,7 +220,7 @@ def create_rpz(token: str, collection_id: str, BAM_URL: str) -> str:
             "type": "ResponsePolicy",
             "name": "dnsfilter_canal",
             "policyType": "BLOCKLIST",
-            "TTL": 3600
+            "ttl": f'{DNS_TTL}'
         }
 
         r = requests.post(url=f"{BAM_URL}/configurations/{collection_id}/responsePolicies", json=data, headers=headers, verify=False)

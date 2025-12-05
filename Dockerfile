@@ -3,7 +3,7 @@ FROM alpine:3.22.1
 LABEL maintainer="Alexandre GIRARD <alexandre@zoreole.com>, Benjamin PAYET <benjamin@zoreole.com>, Tristan SCANDELLA <tristan@zoreole.com>"
 LABEL version="1.0.0"
 
-ARG BOTO3_VERSION="1.40.63"
+ARG BOTO3_VERSION="1.42.3"
 ARG REQUESTS_VERSION="2.32.5"
 
 RUN apk add --no-cache \ 
@@ -15,7 +15,7 @@ RUN apk add --no-cache \
     supervisor
 
 #Create named user
-RUN adduser -D named;
+#RUN adduser -D named;
 
 # Create the required directory with the right permissions
 RUN mkdir -p /usr/src/app/zones \
@@ -33,7 +33,7 @@ RUN python3 -m venv /venv \
     && . /venv/bin/activate \
     && pip install --no-cache-dir \
     boto3==${BOTO3_VERSION} \
-    requests==${REQUESTS_VERSION} \
+    requests==${REQUESTS_VERSION} 
 
 # Define the PATH
 ENV PATH="/venv/bin:$PATH"
@@ -51,6 +51,8 @@ WORKDIR /usr/src/app
 ENV EXECUTION_INTERVAL="30"
 ENV AWS_REGION="eu-west-1"
 ENV VERBOSITY="1"
+ENV DNS_TTL="60"
+
 
 # Expose DNS ports
 EXPOSE 53/tcp
