@@ -39,8 +39,8 @@ RUN python3 -m venv /venv \
 ENV PATH="/venv/bin:$PATH"
 
 COPY ./app /usr/src/app
-COPY ./app/config/supervisord.conf /etc/supervisord.conf
-COPY ./bind/solution_bindtransfer/named.conf /etc/bind/named.conf
+COPY ./supervisord.conf /etc/supervisord.conf
+COPY ./named.conf /etc/bind/named.conf
 
 RUN chown named:named /etc/bind/named.conf
 

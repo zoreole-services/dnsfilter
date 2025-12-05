@@ -1,6 +1,6 @@
 services:
   dnsfilter:
-    build: .
+    build: ./build
     container_name: dnsfilter
     volumes:
       # SOLUTION BINDLOCAL
