@@ -58,12 +58,14 @@ Before installation, ensure the following components are available:
 |-----------|----------|-----------|-------------|
 | `AWS_ACCESS_KEY_ID` | - | Yes | AWS access key for S3 bucket |
 | `AWS_SECRET_ACCESS_KEY` | - | Yes | AWS secret access key |
-| `AWS_REGION` | `eu-west-1` | Yes | AWS region |
+| `AWS_REGION` | `eu-west-1` | No | AWS region |
 | `S3_BUCKET_NAME` | - | Yes | Name of S3 bucket |
 | `S3_OBJECT_KEY_PATH` | - | Yes | Path to object in S3 |
 | `S3_OBJECT_FILE_NAME` | - | Yes | File name containing domains |
-| `EXECUTION_INTERVAL` | `30` | Yes | Polling interval (seconds) |
+| `EXECUTION_INTERVAL` | `30` | No | Polling interval (seconds) |
 | `SOLUTION_IDENTIFIER` | - | Yes | Solution names |
+| `DNS_TTL` | `60` | No | DNS entries TTL |
+| `DOMAIN_WHITELIST` | - | No | Domain entries to whitelist |
 
 
 
@@ -90,6 +92,13 @@ In this mode, Bind9 runs **inside the container**, acting as **master** for the 
 Other DNS servers can perform zone transfers from this master.
 
 
+| Variable | Default | Required | Description |
+|-----------|----------|-----------|-------------|
+| `BIND_SLAVE_IPADDR` | - | Yes* | DNS Slave IP address |
+
+* Those variables are only mandatory if BINDTRANSFER solution is selected.
+
+
 **Bind Configuration:**
 
 In `/etc/bind/named.conf.local`:
@@ -114,17 +123,19 @@ response-policy { zone "rpz"; };
 
 This mode connects to a **BlueCat BAM** server using its **REST API v2**, and update its response policies zone.
 
-| Variable | Required | Description |
-|-----------|-----------|-------------|
-| `BLUECAT_USER` | Yes | BlueCat BAM username |
-| `BLUECAT_PWD` | Yes | BlueCat BAM password |
-| `BLUECAT_IPADDR` | Yes | BlueCat BAM IP address |
-| `BLUECAT_TARGET_BDDS` | Yes | Target BDDS server name |
-| `BLUECAT_TENANT_NAME` | Yes | Tenant configuration name |
+| Variable | Default | Required | Description |
+|-----------|----------|-----------|-------------|
+| `BLUECAT_USER` | - | Yes* | BlueCat BAM username |
+| `BLUECAT_PWD` | - | Yes* | BlueCat BAM password |
+| `BLUECAT_IPADDR` | - | Yes* | BlueCat BAM IP address |
+| `BLUECAT_TARGET_BDDS` | - | Yes* | Target BDDS server name |
+| `BLUECAT_TENANT_NAME` | - | Yes* | Tenant configuration name |
+
+* Those variables are only mandatory if BLUECATAPI solution is selected.
 
 **BlueCat Configuration:**
 
-Ensure an **RP Zone** exists in *DNS > DNS View > RP Zones* and that the policy created by the script (default: `dnsfilter_canal`) is attached to it.
+Ensure an **Response Policy Zone** exists in *DNS > DNS View > RP Zones* and that the policy created by the script (default: `dnsfilter`) is attached to it.
 
 ---
 

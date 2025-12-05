@@ -146,7 +146,7 @@ def get_collection_id(token: str,BAM_URL: str) -> List[Dict[str, Any]]:
 
 def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
     """
-    Retrieves the Response Policy Zone (RPZ) named 'dnsfilter_canal' from BlueCat BAM.
+    Retrieves the Response Policy Zone (RPZ) named 'dnsfilter' from BlueCat BAM.
 
     Args:
         token (str): Authentication token for BlueCat API.
@@ -158,7 +158,7 @@ def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
             - rpz_collection_id: ID of the RPZ if found, otherwise "None".
 
     Raises:
-        BlueCatNotFoundError: If the RPZ 'dnsfilter_canal' is not found.
+        BlueCatNotFoundError: If the RPZ 'dnsfilter' is not found.
         BlueCatAPIError: If an unexpected error occurs during the API request.
     """
 
@@ -169,7 +169,7 @@ def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
             "Content-Type": "application/hal+json"
         }
 
-        r = requests.get(url=f"{BAM_URL}/responsePolicies?fields=name%2Cconfiguration.id%2Cid&filter=name%3A%22dnsfilter_canal%22", headers=headers, verify=False)
+        r = requests.get(url=f"{BAM_URL}/responsePolicies?fields=name%2Cconfiguration.id%2Cid&filter=name%3A%22dnsfilter%22", headers=headers, verify=False)
 
         logging.debug(f" Result of get rpz method: {r.text}")
         resp_json = r.json()
@@ -187,7 +187,7 @@ def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
         }
         return env_data
     except IndexError:
-        raise BlueCatNotFoundError("No RPZ named 'dnsfilter_canal' found.")
+        raise BlueCatNotFoundError("No RPZ named 'dnsfilter' found.")
     except requests.exceptions.RequestException as e:
         logging.error(f"Request error while fetching RPZ : {e}")
         raise BlueCatAPIError(f"Unexpected request: {e}")
@@ -195,9 +195,9 @@ def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
         logging.error(f"Unexpected error while fetching RPZ : {e}")
         raise BlueCatAPIError(f"Unexpected error: {e}")
 
-def create_rpz(token: str, collection_id: str, BAM_URL: str, DNS_TTL: int) -> str:
+def create_rpz(token: str, collection_id: str, BAM_URL: str, DNS_TTL: int, BLUECAT_RPZONE_NAME: str) -> str:
     """
-    Creates a new Response Policy Zone (RPZ) named 'dnsfilter_canal' in BlueCat BAM.
+    Creates a new Response Policy Zone (RPZ) named 'dnsfilter' in BlueCat BAM.
 
     Args:
         token (str): Authentication token for BlueCat API.
@@ -218,7 +218,7 @@ def create_rpz(token: str, collection_id: str, BAM_URL: str, DNS_TTL: int) -> st
         }
         data = {
             "type": "ResponsePolicy",
-            "name": "dnsfilter_canal",
+            "name": f"{BLUECAT_RPZONE_NAME}",
             "policyType": "BLOCKLIST",
             "ttl": f'{DNS_TTL}'
         }

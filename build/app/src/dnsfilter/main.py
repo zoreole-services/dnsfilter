@@ -66,7 +66,7 @@ def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER: str, BIND_SLAVE_IPADDR: s
     
     generate_rpz_file(domain_list, DNS_TTL, rpz_file_path)
 
-def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[str], DNS_TTL: int) -> None:
+def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[str], DNS_TTL: int, BLUECAT_RPZONE_NAME: str) -> None:
     """
     Execute BLUECATAPI solution
     Args:
@@ -103,7 +103,7 @@ def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[s
         logging.debug(f"Processing tenant ID: {tenant_id}")
         if count == 0:
             logging.info("No existing RPZ found. Creating a new one...")
-            rpz_collection_id = create_rpz(token, tenant_id, BAM_URL, DNS_TTL)
+            rpz_collection_id = create_rpz(token, tenant_id, BAM_URL, DNS_TTL, BLUECAT_RPZONE_NAME)
 
         bluecat_domain_list = get_policy_items(token, rpz_collection_id, BAM_URL)
         aws_domain_list = domain_list
@@ -138,6 +138,7 @@ def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[s
 def main():
     try:
         DNS_TTL = os.getenv("DNS_TTL")
+        BLUECAT_RPZONE_NAME = os.getenv("BLUECAT_RPZONE_NAME")
         domain_list_file_path = Path("/tmp/domain_list.json")
         rpz_file_path = Path("/usr/src/app/zones/rpz.db")
 
@@ -157,19 +158,14 @@ def main():
         logging.info(f"Result {result}")
         logging.info(f"new domain list: {domain_list}")
 
-        logging.info(f"Domain list retrieved: {domain_list}")
-
         solutions = [sol.strip() for sol in SOLUTION_IDENTIFIER.split(",")]
-        
-        for solution in solutions:
 
-            logging.info(f"#### Solution: {solution} #####")
-            if domain_list:
-
-                logging.info(f"Retrieved {len(domain_list)} domains.")
-                
-                if check_file_exists(domain_list_file_path):
-                    if has_domain_list_changed(domain_list, domain_list_file_path):
+        if has_domain_list_changed(domain_list, domain_list_file_path):
+            for solution in solutions:
+                logging.info(f"#### Solution: {solution} #####")
+                if domain_list:
+                    logging.info(f"Retrieved {len(domain_list)} domains.")
+                    if check_file_exists(domain_list_file_path):
                         if solution == "BINDTRANSFER" or solution == "BINDLOCAL":
                             BIND_SLAVE_IPADDR = get_bind_env()
                             logging.info("Domain list has changed. Generating new RPZ file...")
@@ -177,20 +173,13 @@ def main():
                         if solution == "BLUECATAPI":
                             BLUECAT_ENV_DATA = get_bluecat_env()
                             logging.info("Domain list has changed. Push modifications on BLUECAT Server")
-                            execute_bluecat_api(BLUECAT_ENV_DATA, domain_list, DNS_TTL)
-                    else:
-                        logging.info("Domain list has not changed. No need to take actions.")
-                
+                            execute_bluecat_api(BLUECAT_ENV_DATA, domain_list, DNS_TTL, BLUECAT_RPZONE_NAME)
                 else:
-                    if solution == "BINDTRANSFER" or solution == "BINDLOCAL":
-                        BIND_SLAVE_IPADDR = get_bind_env()
-                        execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path, DNS_TTL)
-                    if solution == "BLUECATAPI":
-                        BLUECAT_ENV_DATA = get_bluecat_env()
-                        execute_bluecat_api(BLUECAT_ENV_DATA, domain_list, DNS_TTL)
-
-            else:
-                logging.info("No domains retrieved.")
+                    logging.info("No domains retrieved.")
+            logging.info(f"Pausing for {EXECUTION_INTERVAL} seconds.")
+        else:
+            logging.info(f"Domain list has not changed. No need to take actions. Pausing for {EXECUTION_INTERVAL} seconds.")
+                
         save_domain_list(domain_list, domain_list_file_path)
 
         time.sleep(EXECUTION_INTERVAL)
