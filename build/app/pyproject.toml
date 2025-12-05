@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnsfilter"
+version = "1.0.0"
+description = "DNS Filter is a Python package that retrieves domain lists from S3 bucket files using Boto3. It filters these domains and converts them into RPZ files that can be stored locally or shared through master-slave relationships. Additionally, DNS Filter can interact with Bluecat servers through their API to implement changes."
+authors = [
+    { name = "Benjamin Payet", email = "benjamin@zoreole.com" },
+    { name = "Alexandre Girard", email = "alexandre@zoreole.com" },
+    { name = "Tristan Scandella", email = "tristan@zoreole.com" }
+]
+readme = "../README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "boto3",
+    "requests",
+    "psutil"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

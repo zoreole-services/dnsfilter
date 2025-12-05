@@ -1,0 +1,12 @@
+---
+services:
+  dnsfilter:
+    build: ./build
+    container_name: dnsfilter
+    restart: unless-stopped
+    env_file:
+      - env/dnsfilter.env
+      - env/bluecat.env
+      - env/bind.env
+    #volumes:
+      #- /etc/bind/dnsfilter_zones:/usr/src/app/zones
