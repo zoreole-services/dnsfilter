@@ -129,7 +129,8 @@ This mode connects to a **BlueCat BAM** server using its **REST API v2**, and up
 | `BLUECAT_PWD` | - | Yes* | BlueCat BAM password |
 | `BLUECAT_IPADDR` | - | Yes* | BlueCat BAM IP address |
 | `BLUECAT_TARGET_BDDS` | - | Yes* | Target BDDS server name |
-| `BLUECAT_TENANT_NAME` | - | Yes* | Tenant configuration name |
+| `BLUECAT_RPZONE_NAME` | - | No | Response Policy Zone name |
+
 
 * Those variables are only mandatory if BLUECATAPI solution is selected.
 
