@@ -11,7 +11,6 @@ from core import (
     update_named_config,
     run_bind,
     get_domain_list,
-    get_domain_list_test,
     check_file_exists,
     get_verbosity_env,
     validate_domains,
@@ -152,8 +151,7 @@ def main():
         SOLUTION_IDENTIFIER = get_solutionid_env()
         EXECUTION_INTERVAL = get_interval_env()
         
-        #domain_list = get_domain_list()
-        domain_list = get_domain_list_test()
+        domain_list = get_domain_list()
 
         result,domain_list = validate_domains(domain_list)
         logging.info(f"Result {result}")

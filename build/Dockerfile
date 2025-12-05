@@ -14,9 +14,6 @@ RUN apk add --no-cache \
     sudo \
     supervisor
 
-#Create named user
-#RUN adduser -D named;
-
 # Create the required directory with the right permissions
 RUN mkdir -p /usr/src/app/zones \
     && mkdir -p /var/cache/bind \

@@ -408,29 +408,3 @@ def get_domain_list() -> Set[str]:
     except Exception as e:
         logging.error(f"Error fetching domains from S3: {e}")
         raise AWSError(f"Failed to fetch domains: {e}")
-
-def get_domain_list_test() -> Set[str]:
-    base_domains = {
-        'mag.ott-hello.xyz', 'my.amazing-tv.com', 'lg.peces.biz', 'hosamir.net',
-        'b.delta2022.xyz', 'es.greatott.me', 'ftyqvtyz.qastertv.xyz', 'fastopen.live',
-        'panel.globesrv.net', 'line.krooba.cc', 'iptvmedia.live', 'sub.flood-wall.net', 'test', '-example.com', 'exemple.invalidtld', 'ドメイン.テスト'
-    }
-    domains_less = {
-        'mag.ott-hello.xyz', 'my.amazing-tv.com', 'lg.peces.biz', 'hosamir.net',
-        'b.delta2022.xyz', 'es.greatott.me', 'ftyqvtyz.qastertv.xyz', 'fastopen.live',
-        'panel.globesrv.net', 'sub.flood-wall.net'
-    }
-    domains_more = {
-        'mag.ott-hello.xyz', 'my.amazing-tv.com', 'lg.peces.biz', 'hosamir.net',
-        'b.delta2022.xyz', 'es.greatott.me', 'ftyqvtyz.qastertv.xyz', 'fastopen.live',
-        'panel.globesrv.net', 'line.krooba.cc', 'iptvmedia.live', 'sub.flood-wall.net', 'tata.com', 'toto.fr'
-    }
-
-    action = random.choice(['same', 'less', 'more'])
-    action = 'same'
-    if action == 'same':
-        return base_domains
-    elif action == 'less':
-        return domains_less
-    elif action == 'more':
-        return domains_more
