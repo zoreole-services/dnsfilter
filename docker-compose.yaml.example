@@ -1,29 +1,12 @@
+---
 services:
   dnsfilter:
     build: ./build
     container_name: dnsfilter
-    volumes:
-      # SOLUTION BINDLOCAL
-      - /etc/bind/dnsfilter_zones:/usr/src/app/zones 
-
     restart: unless-stopped
-    environment:
-
-      # NECESSARY ENVIRONMENT VARIABLE
-      AWS_ACCESS_KEY_ID: "ENTER-ACCESS-KEY-ID"
-      AWS_SECRET_ACCESS_KEY: "ENTER-ACCESS-KEY"
-      S3_BUCKET_NAME: "ENTER-BUCKET-NAME"
-      S3_OBJECT_KEY_PATH: "path/to/s3/object/key"
-      S3_OBJECT_FILE_NAME: "domains_to_block_tests.txt"
-      SOLUTION_IDENTIFIER: "SOLUTION-NAME(S)"
-      DOMAIN_WHITELIST: "DOMAINS LIST TO WHITELIST"
-
-      # OPTIONAL ENVIRONMENT VARIABLE - SOLUTION BINDTRANSFER
-      BIND_SLAVE_IPADDR: "SLAVE SERVER IP ADDRESS"
-
-      # OPTIONAL ENVIRONMENT VARIABLE - SOLUTION BLUECATAPI
-      BLUECAT_USER: "BLUECAT API USERNAME"
-      BLUECAT_PWD: "BLUECAT API USER PASSWORD"
-      BLUECAT_IPADDR: "BLUECAT SERVER IP ADDRESS"
-      BLUECAT_TARGET_BDDS: "BLUECAT BDDS SERVER(S)"
-      BLUECAT_TENANT_NAME: "BLUECAT GLOBAL CONFIGURATION NAME"
+    env_file:
+      - env/dnsfilter.env
+      - env/bluecat.env
+      - env/bind.env
+    #volumes:
+      #- /etc/bind/dnsfilter_zones:/usr/src/app/zones
