@@ -3,12 +3,19 @@ FROM alpine:3.22.1
 LABEL maintainer="Alexandre GIRARD <alexandre@zoreole.com>, Benjamin PAYET <benjamin@zoreole.com>, Tristan SCANDELLA <tristan@zoreole.com>"
 LABEL version="1.0.0"
 
-RUN apk add --no-cache sudo python3 py3-pip bash bind supervisor
+ARG BOTO3_VERSION="1.40.63"
+ARG REQUESTS_VERSION="2.32.5"
+
+RUN apk add --no-cache \ 
+    bash \
+    bind \
+    py3-pip \
+    python3 \
+    sudo \
+    supervisor
 
 #Create named user
-RUN if ! id named &>/dev/null; then \
-        adduser -D -g 'BIND DNS Server' named; \
-    fi
+RUN adduser -D named;
 
 # Create the required directory with the right permissions
 RUN mkdir -p /usr/src/app/zones \
@@ -24,19 +31,17 @@ RUN mkdir -p /usr/src/app/zones \
 # Create the venv
 RUN python3 -m venv /venv \
     && . /venv/bin/activate \
-    && pip install --no-cache-dir boto3 requests
+    && pip install --no-cache-dir \
+    boto3==${BOTO3_VERSION} \
+    requests==${REQUESTS_VERSION} \
 
 # Define the PATH
 ENV PATH="/venv/bin:$PATH"
 
-# COPY app directory
 COPY ./app /usr/src/app
-
-# COPY supervisord configuration file
 COPY ./app/config/supervisord.conf /etc/supervisord.conf
-
-#COPY named configuration file for BINDTRANSFER solution
 COPY ./bind/solution_bindtransfer/named.conf /etc/bind/named.conf
+
 RUN chown named:named /etc/bind/named.conf
 
 USER named
