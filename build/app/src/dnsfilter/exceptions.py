@@ -34,8 +34,6 @@ class BindConnectionError(BindError):
     """Error related to BIND server connection."""
     pass
 
-
-
 class CoreError(Exception):
     """Base class for all core-related exceptions."""
     pass

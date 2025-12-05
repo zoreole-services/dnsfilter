@@ -51,7 +51,6 @@ def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER: str, BIND_SLAVE_IPADDR: s
         domain_list (Iterable[str]): Domains to include in RPZ.
         rpz_file_path (str): Destination RPZ file path.
         domain_list_file_path (str): Domain list file path.
-
     Returns:
         None
     """
@@ -62,8 +61,7 @@ def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER: str, BIND_SLAVE_IPADDR: s
         else:
             logging.info("Starting Bind9 (named)...")
             update_named_config(BIND_SLAVE_IPADDR)
-            run_bind()
-    
+            run_bind()   
     generate_rpz_file(domain_list, DNS_TTL, rpz_file_path)
 
 def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[str], DNS_TTL: int, BLUECAT_RPZONE_NAME: str) -> None:
@@ -107,10 +105,8 @@ def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[s
 
         bluecat_domain_list = get_policy_items(token, rpz_collection_id, BAM_URL)
         aws_domain_list = domain_list
-
         add_domain_list = set(aws_domain_list) - set(bluecat_domain_list)
         delete_domain_list = set(bluecat_domain_list) - set(aws_domain_list)
-
         logging.info(f"Domains to add: {add_domain_list}")
         logging.info(f"Domains to delete: {delete_domain_list}")
 
@@ -139,9 +135,8 @@ def main():
     try:
         DNS_TTL = os.getenv("DNS_TTL")
         BLUECAT_RPZONE_NAME = os.getenv("BLUECAT_RPZONE_NAME")
-        domain_list_file_path = Path("/tmp/domain_list.json")
-        rpz_file_path = Path("/usr/src/app/zones/rpz.db")
-
+        SOLUTION_IDENTIFIER = get_solutionid_env()
+        EXECUTION_INTERVAL = get_interval_env()
         VERBOSITY = get_verbosity_env()
         args = parse_args()
         if (args.verbose > VERBOSITY):
@@ -149,17 +144,17 @@ def main():
         else:
             setup_logger(VERBOSITY)
 
-        SOLUTION_IDENTIFIER = get_solutionid_env()
-        EXECUTION_INTERVAL = get_interval_env()
+        domain_list_file_path = Path("/tmp/domain_list.json")
+        rpz_file_path = Path("/usr/src/app/zones/rpz.db")
         
         domain_list = get_domain_list()
-
-        result,domain_list = validate_domains(domain_list)
-        logging.info(f"Result {result}")
-        logging.info(f"new domain list: {domain_list}")
+        logging.info(f"Domain list retrieved from AWS: {domain_list}")
+        result,domain_list,is_valid = validate_domains(domain_list)
+        if is_valid == False:
+            logging.info(f"Result {result}")
+            logging.info(f"new validated domain list: {domain_list}")
 
         solutions = [sol.strip() for sol in SOLUTION_IDENTIFIER.split(",")]
-
         if has_domain_list_changed(domain_list, domain_list_file_path):
             for solution in solutions:
                 logging.info(f"#### Solution: {solution} #####")
@@ -178,12 +173,9 @@ def main():
                     logging.info("No domains retrieved.")
             logging.info(f"Pausing for {EXECUTION_INTERVAL} seconds.")
         else:
-            logging.info(f"Domain list has not changed. No need to take actions. Pausing for {EXECUTION_INTERVAL} seconds.")
-                
+            logging.info(f"Domain list has not changed. No need to take actions. Pausing for {EXECUTION_INTERVAL} seconds.")               
         save_domain_list(domain_list, domain_list_file_path)
-
         time.sleep(EXECUTION_INTERVAL)
-
     except BindError as e:
         logging.error(f"BIND error: {e}")
         return 1

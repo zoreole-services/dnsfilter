@@ -12,15 +12,12 @@ from exceptions import (
 )
 from datetime import datetime
 
-
 def save_domain_list(domain_list: List[str], file_path: str = "/usr/src/app/zones/domain_list.json") -> None:
     """
     Save the list of domains to a JSON file.
-
     Args:
         domain_list (List[str]): List of domains to save.
         file_path (str): Path to the JSON file. Defaults to "/usr/src/app/zones/domain_list.json".
-
     Raises:
         IOError: If there is an error writing the file.
         Exception: For any other unexpected errors.
@@ -39,10 +36,8 @@ def save_domain_list(domain_list: List[str], file_path: str = "/usr/src/app/zone
 def load_domain_list(file_path: str = "/usr/src/app/zones/domain_list.json") -> Set[str]:
     """
     Load the list of domains from a JSON file.
-
     Args:
         file_path (str): Path to the JSON file. Defaults to "/usr/src/app/zones/domain_list.json".
-
     Returns:
         Set[str]: A set of domains loaded from the file. Returns an empty set if the file does not exist or is invalid.
     """
@@ -62,11 +57,9 @@ def load_domain_list(file_path: str = "/usr/src/app/zones/domain_list.json") -> 
 def has_domain_list_changed(new_domain_list: List[str], file_path: str = "/usr/src/app/zones/domain_list.json") -> bool:
     """
     Check if the domain list has changed compared to the previously saved list.
-
     Args:
         new_domain_list (List[str]): The new list of domains to compare.
         file_path (str): Path to the JSON file. Defaults to "/usr/src/app/zones/domain_list.json".
-
     Returns:
         bool: True if the domain list has changed, False otherwise.
     """
@@ -81,10 +74,8 @@ def has_domain_list_changed(new_domain_list: List[str], file_path: str = "/usr/s
 def is_bind_running():
     """
     Check if the BIND server is running by attempting to connect to port 53.
-
     Returns:
         bool: True if BIND is running, False otherwise.
-
     Raises:
         BindConnectionError: If there is an unexpected connection error.
     """
@@ -103,10 +94,8 @@ def is_bind_running():
 def get_bind_env():
     """
     Retrieve the BIND environment variables.
-
     Returns:
         str: The BIND slave IP address.
-
     Raises:
         BindEnvError: If the BIND_SLAVE_IPADDR environment variable is missing.
     """
@@ -120,17 +109,15 @@ def get_bind_env():
 def generate_rpz_file(domains: list[str], DNS_TTL: int, rpz_file_path: str = "/usr/src/app/zones/rpz.db") -> None:
     """
     Generate an RPZ (Response Policy Zone) file for BIND.
-
     Args:
         domains (list[str]): List of domain names to include in the RPZ file.
         rpz_file_path (str): Path to the output RPZ file. If the file exists, it will be overwritten.
-
     Raises:
         BindRPZError: Raised if the RPZ file cannot be written due to an I/O error or other unexpected exceptions.
     """
     try:
         serial = datetime.now().strftime("%y%m%d%H%M")
-        # Write the RPZ zone file
+
         with open(rpz_file_path, 'w') as rpz_file:
             rpz_file.write(f'; UPDATE: 1\n')
             rpz_file.write(f"$TTL {DNS_TTL}\n")
@@ -143,7 +130,6 @@ def generate_rpz_file(domains: list[str], DNS_TTL: int, rpz_file_path: str = "/u
             rpz_file.write(f"              IN    NS    localhost.\n")
             for domain in domains:
                 rpz_file.write(f"{domain:<25} CNAME  .\n")
-
         logging.info(f"RPZ file successfully written to {rpz_file_path}")
 
     except IOError as e:
