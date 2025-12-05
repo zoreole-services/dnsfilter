@@ -1,12 +1,10 @@
-
 import os
 import requests
 import logging
 import json
-import sys
+from typing import List, Dict, Any, Set, Tuple
 
 from exceptions import (
-    BlueCatError,
     BlueCatEnvError,
     BlueCatLoginError,
     BlueCatAPIError,
@@ -61,8 +59,7 @@ def get_bluecat_env():
         raise BlueCatEnvError(f"Error : {e}")
 
 
-
-def login(BLUECAT_USER,BLUECAT_PWD,BAM_URL):
+def login(BLUECAT_USER: str,BLUECAT_PWD: str,BAM_URL: str) -> str:
     """
     Authenticates with the BlueCat BAM server and retrieves an authentication token.
 
@@ -109,7 +106,7 @@ def login(BLUECAT_USER,BLUECAT_PWD,BAM_URL):
 
 
 
-def get_collection_id(token,BAM_URL):
+def get_collection_id(token: str,BAM_URL: str) -> List[Dict[str, Any]]:
     """
     Retrieves the list of global configuration collections from BlueCat BAM.
 
@@ -147,7 +144,7 @@ def get_collection_id(token,BAM_URL):
     
 
 
-def get_rpz(token,BAM_URL):
+def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
     """
     Retrieves the Response Policy Zone (RPZ) named 'dnsfilter_canal' from BlueCat BAM.
 
@@ -198,7 +195,7 @@ def get_rpz(token,BAM_URL):
         logging.error(f"Unexpected error while fetching RPZ : {e}")
         raise BlueCatAPIError(f"Unexpected error: {e}")
 
-def create_rpz(token,collection_id,BAM_URL):
+def create_rpz(token: str, collection_id: str, BAM_URL: str) -> str:
     """
     Creates a new Response Policy Zone (RPZ) named 'dnsfilter_canal' in BlueCat BAM.
 
@@ -240,7 +237,10 @@ def create_rpz(token,collection_id,BAM_URL):
         logging.error(f"Unexpected error whicle creating RPZ: {e}")
         raise BlueCatAPIError(f"Unexpected error: {e}")
 
-def create_policy_items(token,rpz_collection_id,domain_list,BAM_URL):
+
+
+
+def create_policy_items(token: str,rpz_collection_id: int,domain_list: List[str],BAM_URL: str) -> None:
     """
     Creates policy items (domains) and attaches them to the specified Response Policy Zone (RPZ).
 
@@ -273,7 +273,7 @@ def create_policy_items(token,rpz_collection_id,domain_list,BAM_URL):
         raise BlueCatAPIError(f"Unexpected error: {e}")
 
 
-def delete_policy_items(token,domain_list,BAM_URL):
+def delete_policy_items(token: str,domain_list: List[str],BAM_URL: str) -> None:
     """
     Deletes policy items (domains) from BlueCat BAM.
 
@@ -315,7 +315,7 @@ def delete_policy_items(token,domain_list,BAM_URL):
 
 
 
-def get_policy_items(token,rpz_collection_id,BAM_URL):
+def get_policy_items(token: str,rpz_collection_id: int,BAM_URL: str) -> Set[str]:
     """
     Retrieves the list of policy items (domains) associated with a Response Policy Zone (RPZ).
 
@@ -357,7 +357,7 @@ def get_policy_items(token,rpz_collection_id,BAM_URL):
         raise BlueCatAPIError(f"Unexpected error: {e}")
  
 
-def get_server(token,BAM_URL):
+def get_server(token: str,BAM_URL: str) -> List[Tuple[int, str]]:
     """
     Retrieves the list of BDDS servers from BlueCat BAM.
 
@@ -395,8 +395,7 @@ def get_server(token,BAM_URL):
         raise BlueCatAPIError(f"Unexpected error: {e}")
 
 
-
-def deploy(token,bdds_id,BAM_URL):
+def deploy(token: str, bdds_id: List[int], BAM_URL: str) -> None:
     """
     Deploys the RPZ configuration to the specified BDDS server(s).
 

@@ -18,9 +18,6 @@ class BlueCatNotFoundError(BlueCatError):
     """Error related to not found ressources."""
     pass
 
-
-
-
 class BindError(Exception):
     """Base class for all BIND-related exceptions."""
     pass

@@ -1,20 +1,16 @@
-
-from datetime import datetime
 import logging
 import os
 import socket
-import subprocess
 import json
 from typing import Set, List
 from pathlib import Path
-
-
 from exceptions import (
     BindConnectionError,
     BindEnvError,
     BindRPZError,
     
 )
+from datetime import datetime
 
 
 def save_domain_list(domain_list: List[str], file_path: str = "/usr/src/app/zones/domain_list.json") -> None:
@@ -30,10 +26,7 @@ def save_domain_list(domain_list: List[str], file_path: str = "/usr/src/app/zone
         Exception: For any other unexpected errors.
     """
     try:
-        # Ensure the directory exists
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-
-        # Save the sorted list of domains to a JSON file
         with open(file_path, 'w') as f:
             json.dump(sorted(domain_list), f)
     except IOError as e:
@@ -54,7 +47,6 @@ def load_domain_list(file_path: str = "/usr/src/app/zones/domain_list.json") -> 
         Set[str]: A set of domains loaded from the file. Returns an empty set if the file does not exist or is invalid.
     """
     try:
-        # Load the list of domains from the JSON file
         with open(file_path, 'r') as f:
             return set(json.load(f))
     except FileNotFoundError:
@@ -79,19 +71,12 @@ def has_domain_list_changed(new_domain_list: List[str], file_path: str = "/usr/s
         bool: True if the domain list has changed, False otherwise.
     """
     try:
-        # Load the old domain list
         old_domain_list = load_domain_list(file_path)
-
-        # Sort and convert the new domain list to a set for comparison
         new_domain_list_sorted = set(sorted(new_domain_list))
-
-        # Check if the new domain list is different from the old one
         return new_domain_list_sorted != old_domain_list
     except Exception as e:
         logging.error(f"Unexpected error while checking domain list changes: {e}")
         raise
-
-
 
 def is_bind_running():
     """
@@ -115,8 +100,6 @@ def is_bind_running():
     finally:
         s.close()
 
-
-
 def get_bind_env():
     """
     Retrieve the BIND environment variables.
@@ -132,44 +115,35 @@ def get_bind_env():
         raise BindEnvError("BIND_SLAVE_IPADDR environment variable is not set.")
     return BIND_SLAVE_IPADDR
 
- 
 
 
-
-
-def generate_rpz_file(domains, rpz_file_path="/usr/src/app/zones/rpz.db"):
+def generate_rpz_file(domains: list[str], rpz_file_path: str = "/usr/src/app/zones/rpz.db")  -> None:
     """
     Generate an RPZ (Response Policy Zone) file for BIND.
 
     Args:
-        domains (list): List of domains to include in the RPZ.
-        rpz_file_path (str): Path to the output RPZ file.
+        domains (list[str]): List of domain names to include in the RPZ file.
+        rpz_file_path (str): Path to the output RPZ file. If the file exists, it will be overwritten.
 
     Raises:
-        BindRPZError: If there is an error writing the RPZ file.
+        BindRPZError: Raised if the RPZ file cannot be written due to an I/O error or other unexpected exceptions.
     """
     try:
-        RPZ_TTL = 60  # Time-to-live for RPZ entries
-
-        # Generate serial in YYMMDDHHMM format
+        RPZ_TTL = 60  
         serial = datetime.now().strftime("%y%m%d%H%M")
-
-
-
         # Write the RPZ zone file
         with open(rpz_file_path, 'w') as rpz_file:
             rpz_file.write(f'; UPDATE: 1\n')
             rpz_file.write(f"$TTL {RPZ_TTL}\n")
             rpz_file.write(f"@            IN    SOA  localhost. root.localhost.  (\n")
             rpz_file.write(f"                      {serial}   ; serial\n")
-            rpz_file.write(f"                      5M  ; refresh\n")
+            rpz_file.write(f"                      2M  ; refresh\n")
             rpz_file.write(f"                      1M  ; retry\n")
-            rpz_file.write(f"                      1W  ; expiry\n")
-            rpz_file.write(f"                      1H) ; minimum\n")
+            rpz_file.write(f"                      5M  ; expiry\n")
+            rpz_file.write(f"                      1M) ; minimum\n")
             rpz_file.write(f"              IN    NS    localhost.\n")
             for domain in domains:
                 rpz_file.write(f"{domain:<25} CNAME  .\n")
-
 
         logging.info(f"RPZ file successfully written to {rpz_file_path}")
 

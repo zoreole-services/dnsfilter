@@ -6,6 +6,10 @@ import subprocess
 import re
 import random
 from subprocess import DEVNULL, STDOUT
+import requests
+import idna
+from typing import List, Dict, Tuple, Set
+
 
 from exceptions import (
     BindError,
@@ -13,9 +17,152 @@ from exceptions import (
     ConfigError,
 )
 
+def is_reserved_domain(domain: str) -> bool:
+    """
+   Validate if domain is part of the IANA reserved domains.
+
+    Returns:
+        bool: result
+
+    Raises:
+        Exception: If unexpected result.    
+    """
+
+    reserved_domains: Set[str] = {
+        "example", "test", "localhost", "invalid", "local", "onion", "arpa"
+    }
+    try:
+        if (domain in reserved_domains):
+            return True
+        else:
+            return False
+    except Exception as e:
+        logging.error(f"Failed to check whether the domain is reserved: {e}")
 
 
-def run_bind():
+def is_valid_fqdn(domain: str) -> bool:
+    """
+    Validate if domain FQDN valid.
+
+    Returns:
+        bool: result
+    """
+
+    fqdn_regex = re.compile(
+        r'^'
+        r'(?!-)[A-Za-z0-9-]{1,63}(?<!-)'
+        r'(\.[A-Za-z0-9-]{1,63}(?<!-))+'
+        r'$'
+    )
+    return bool(fqdn_regex.match(domain))
+
+def is_valid_tld(domain: str) -> bool:
+    """
+    Validate if domain is part of valid TLD domain list.
+
+    Returns:
+        bool: result
+    """
+    valid_tlds: Set[str] = set()
+    tld_file_path = "/tmp/valid_tld.txt"
+    try:
+        response = requests.get("https://data.iana.org/TLD/tlds-alpha-by-domain.txt")
+        if response.status_code == 200:
+            tlds = response.text.splitlines()
+            tlds = [tld.lower() for tld in tlds if tld and not tld.startswith("#")]
+            valid_tlds=set(tlds)
+            with open(tld_file_path, 'w') as f:
+                f.write(response.text)
+    except:
+        try:
+            if os.path.exists(tld_file_path):
+                with open(tld_file_path, 'r') as f:
+                    tlds = f.read().splitlines()
+                    tlds = [tld.lower() for tld in tlds if tld and not tld.startswith("#")]
+                    valid_tlds = set(tlds)
+        except:
+            valid_tlds: Set[str] = {
+                "com", "org", "net", "int", "edu", "gov", "mil", "fr", "re",
+                "io", "ai", "co", "uk", "de", "eu", "us", "ca", "au", "jp"
+            }
+
+    tld = domain.split('.')[-1].lower()
+
+    if tld in valid_tlds:
+        return True
+    else:
+        return False
+
+
+
+def validate_domains(domain_list: List[str]) -> Tuple[List[Dict[str, List[str]]], List[str]]:
+    """
+   Validate if retrieved domain list.
+
+    Returns:
+        results (str): result messages
+        new_domain_list (list): The new domain list without the invalid domains.
+
+    """
+
+    results = []
+    new_domain_list = []
+    DOMAIN_WHITELIST = get_domainwhitelist()
+    for domain in domain_list:
+        is_valid = True
+        messages = []
+        domain = domain.strip().lower()
+        try:
+            domain = idna.encode(domain).decode('ascii')
+        except idna.IDNAError as e:
+            is_valid = False
+            messages.append(f"Domain: \"{domain}\" deleted from list. Reason: {e}")
+            continue
+
+        if is_reserved_domain(domain):
+            is_valid = False
+            messages.append(f"Domain: \"{domain}\" deleted from list. Reason: Domain is reserved by IANA")
+        if not is_valid_fqdn(domain):
+            is_valid = False
+            messages.append(f"Domain: \"{domain}\" deleted from list. Reason: Invalid FQDN format")
+        if not is_valid_tld(domain):
+            is_valid = False
+            messages.append(f"Domain: \"{domain}\" deleted from list. Reason: TLD '{domain.split('.')[-1]}' is invalid")
+        
+        if domain in DOMAIN_WHITELIST:
+            is_valid = False
+            messages.append(f"Domain: \"{domain}\" deleted from list. Domain is part of the whitelist")
+        
+        if is_valid == False:
+            results.append({
+                "domain": domain,
+                "messages": messages 
+            })
+        else:
+            new_domain_list.append(domain)
+
+    return results,new_domain_list
+
+
+def get_domainwhitelist():
+    """
+    Retrieves the DOMAIN_WHITELIST environment variable.
+
+    Returns:
+        str: The solution identifier.
+
+    Raises:
+        ConfigError: If DOMAIN_WHITELIST is not set.
+    """
+    DOMAIN_WHITELIST = os.getenv("DOMAIN_WHITELIST")
+    if not DOMAIN_WHITELIST:
+        raise ConfigError("DOMAIN_WHITELIST environment variable is not set.")
+    return DOMAIN_WHITELIST
+
+
+
+
+def run_bind() -> None:
     """
     Starts the BIND9 DNS server in foreground mode.
 
@@ -38,7 +185,7 @@ def run_bind():
 
 
 
-def create_s3_objects(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET_NAME, S3_OBJECT_KEY):
+def create_s3_objects(AWS_ACCESS_KEY_ID: str, AWS_SECRET_ACCESS_KEY: str, AWS_REGION: str, S3_BUCKET_NAME: str, S3_OBJECT_KEY: str) -> str:
     """
     Creates an S3 object reference for accessing AWS S3 resources.
 
@@ -69,7 +216,7 @@ def create_s3_objects(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_B
         raise AWSError(f"S3 session creation failed: {e}")
 
 
-def check_file_exists(file_path):
+def check_file_exists(file_path: str) -> bool:
     """
     Check if RPZ file exists.
 
@@ -81,7 +228,8 @@ def check_file_exists(file_path):
     """
     return os.path.isfile(file_path)
 
-def get_solutionid_env():
+
+def get_solutionid_env() -> str:
     """
     Retrieves the SOLUTION_IDENTIFIER environment variable.
 
@@ -97,7 +245,7 @@ def get_solutionid_env():
     return SOLUTION_IDENTIFIER
 
 
-def get_verbosity_env():
+def get_verbosity_env() -> str:
     """
     Retrieves the SOLUTION_IDENTIFIER environment variable.
 
@@ -113,7 +261,7 @@ def get_verbosity_env():
     return int(VERBOSITY)
 
 
-def get_interval_env():
+def get_interval_env() -> str:
     """
     Retrieves and converts the EXECUTION_INTERVAL environment variable to seconds.
 
@@ -133,7 +281,7 @@ def get_interval_env():
         raise ConfigError("EXECUTION_INTERVAL must be a valid integer.")
 
 
-def update_named_config(BIND_SLAVE_IPADDR):
+def update_named_config(BIND_SLAVE_IPADDR: str) -> None:
     """
     Updates the BIND named.conf file with the provided slave IP address(es).
 
@@ -170,9 +318,7 @@ def update_named_config(BIND_SLAVE_IPADDR):
         logging.error(f"Failed to update named.conf: {e}")
         raise ConfigError(f"Failed to update named.conf: {e}")
 
-
-
-def get_aws_env():
+def get_aws_env() -> Tuple[str, str, str, str, str, str, str]:
     """
     Retrieves AWS-related environment variables.
 
@@ -202,9 +348,7 @@ def get_aws_env():
         logging.error(f"Failed to retrieve AWS environment variables: {e}")
         raise ConfigError(f"AWS config error: {e}")
 
-
-
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """
     Parses command-line arguments for verbosity level.
 
@@ -220,19 +364,18 @@ def parse_args():
     )
     return parser.parse_args()
 
-def setup_logger(verbosity: int):
+def setup_logger(verbosity: int) -> None:
     """
     Configures the logging level based on verbosity.
 
     Args:
         verbosity (int): Verbosity level (0: WARNING, 1: INFO, 2+: DEBUG).
     """
-    # Mapping between verbosity and logging level
     if verbosity == 0:
         level = logging.WARNING
     elif verbosity == 1:
         level = logging.INFO
-    else:  # -vv or more
+    else:
         level = logging.DEBUG
 
     logging.basicConfig(
@@ -240,9 +383,7 @@ def setup_logger(verbosity: int):
         level=level,
     )
 
-
-
-def get_domain_list():
+def get_domain_list() -> Set[str]:
     """
     Retrieves the list of domains from an S3 bucket.
 
@@ -268,13 +409,11 @@ def get_domain_list():
         logging.error(f"Error fetching domains from S3: {e}")
         raise AWSError(f"Failed to fetch domains: {e}")
 
-
-def get_domain_list_test():
-
+def get_domain_list_test() -> Set[str]:
     base_domains = {
         'mag.ott-hello.xyz', 'my.amazing-tv.com', 'lg.peces.biz', 'hosamir.net',
         'b.delta2022.xyz', 'es.greatott.me', 'ftyqvtyz.qastertv.xyz', 'fastopen.live',
-        'panel.globesrv.net', 'line.krooba.cc', 'iptvmedia.live', 'sub.flood-wall.net'
+        'panel.globesrv.net', 'line.krooba.cc', 'iptvmedia.live', 'sub.flood-wall.net', 'test', '-example.com', 'exemple.invalidtld', 'ドメイン.テスト'
     }
     domains_less = {
         'mag.ott-hello.xyz', 'my.amazing-tv.com', 'lg.peces.biz', 'hosamir.net',
@@ -288,13 +427,10 @@ def get_domain_list_test():
     }
 
     action = random.choice(['same', 'less', 'more'])
-
+    action = 'same'
     if action == 'same':
-        # Même liste
         return base_domains
     elif action == 'less':
-        # Même liste
         return domains_less
     elif action == 'more':
-        # Même liste
         return domains_more

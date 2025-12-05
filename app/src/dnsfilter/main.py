@@ -1,7 +1,7 @@
 import logging
-import subprocess
 import time
 from pathlib import Path
+from typing import Iterable, Dict, Set
 from core import (
     setup_logger,
     parse_args,
@@ -13,15 +13,7 @@ from core import (
     get_domain_list_test,
     check_file_exists,
     get_verbosity_env,
-
-)
-from bind import (
-    generate_rpz_file,
-    get_bind_env,
-    is_bind_running,
-    save_domain_list,
-    load_domain_list,
-    has_domain_list_changed,
+    validate_domains,
 )
 from bluecat import (
     login,
@@ -35,6 +27,13 @@ from bluecat import (
     deploy,
     get_server,
 )
+from bind import (
+    generate_rpz_file,
+    get_bind_env,
+    is_bind_running,
+    save_domain_list,
+    has_domain_list_changed,
+)
 from exceptions import (
     BlueCatError,
     BindError,
@@ -43,17 +42,21 @@ from exceptions import (
     CoreError,
 )
 
-def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path, domain_list_file_path):
+def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER: str, BIND_SLAVE_IPADDR: str, domain_list: Iterable[str], rpz_file_path: str) -> None:
+    """
+    Execute BINDLOCAL or BINDTRANSFER solution.
+    Args:
+        SOLUTION_IDENTIFIER (str): Comma-separated solution identifiers.
+        BIND_SLAVE_IPADDR (str): IP address of slave DNS server.
+        domain_list (Iterable[str]): Domains to include in RPZ.
+        rpz_file_path (str): Destination RPZ file path.
+        domain_list_file_path (str): Domain list file path.
 
-    """Execute BINDLOCAL or BINDTRANSFER solution."""
+    Returns:
+        None
+    """
     solutions = [sol.strip() for sol in SOLUTION_IDENTIFIER.split(",")]
-
-    if "BINDLOCAL" in solutions :
-        logging.info(" ####  Starting solution: BINDLOCAL ####")
-
-    # Run BIND if BINDTRANSFER is selected
     if "BINDTRANSFER" in solutions :
-        logging.info(" ####  Starting solution: BINDTRANSFER ####")
         if is_bind_running():
             logging.info("Bind9 (named) is already running.")
         else:
@@ -62,19 +65,30 @@ def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain
             run_bind()
     
     generate_rpz_file(domain_list, rpz_file_path)
-    #save_domain_list(domain_list, domain_list_file_path)
 
-
-
-def execute_bluecat_api(get_bluecat_env_data, domain_list, domain_list_file_path):
-    """Execute BLUECATAPI solution."""
-    logging.info(" ####  Starting solution: BLUECATAPI ####")
+def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[str]) -> None:
+    """
+    Execute BLUECATAPI solution
+    Args:
+        get_bluecat_env_data (dict): BlueCat configuration dictionary containing:
+            - "user": BAM login username.
+            - "password": BAM login password.
+            - "bam_url": URL of the BlueCat API.
+            - "tenant_name": list of tenants.
+            - "target_bdds": Target BDDS names.
+        domain_list (set): Set of domains retrieved from AWS.
+    Raises:
+        BlueCatAPIError: If a BlueCat API request fails.
+        KeyError: If a required configuration key is missing.
+        Exception: For any unexpected error during processing.
+    Returns:
+        None
+    """
     BLUECAT_USER = get_bluecat_env_data["user"]
     BLUECAT_PWD = get_bluecat_env_data["password"]
     BAM_URL = get_bluecat_env_data["bam_url"]
     BLUECAT_TENANT_NAME = get_bluecat_env_data["tenant_name"]
     BLUECAT_TARGET_BDDS = get_bluecat_env_data["target_bdds"]
-
 
     token = login(BLUECAT_USER, BLUECAT_PWD, BAM_URL)
     get_rpz_data = get_rpz(token, BAM_URL)
@@ -94,8 +108,8 @@ def execute_bluecat_api(get_bluecat_env_data, domain_list, domain_list_file_path
         bluecat_domain_list = get_policy_items(token, rpz_collection_id, BAM_URL)
         aws_domain_list = domain_list
 
-        add_domain_list = aws_domain_list - bluecat_domain_list
-        delete_domain_list = bluecat_domain_list - aws_domain_list
+        add_domain_list = set(aws_domain_list) - set(bluecat_domain_list)
+        delete_domain_list = set(bluecat_domain_list) - set(aws_domain_list)
 
         logging.info(f"Domains to add: {add_domain_list}")
         logging.info(f"Domains to delete: {delete_domain_list}")
@@ -121,9 +135,10 @@ def execute_bluecat_api(get_bluecat_env_data, domain_list, domain_list_file_path
         else:
             logging.info("No changes to deploy.")
 
-
 def main():
     try:
+        domain_list_file_path = Path("/tmp/domain_list.json")
+        rpz_file_path = Path("/usr/src/app/zones/rpz.db")
 
         VERBOSITY = get_verbosity_env()
         args = parse_args()
@@ -134,43 +149,45 @@ def main():
 
         SOLUTION_IDENTIFIER = get_solutionid_env()
         EXECUTION_INTERVAL = get_interval_env()
-        BIND_SLAVE_IPADDR = get_bind_env()
+        
         #domain_list = get_domain_list()
         domain_list = get_domain_list_test()
-        print("DOMAIN LIST", domain_list)
-        domain_list_file_path = Path("/tmp/domain_list.json")
-        rpz_file_path = Path("/usr/src/app/zones/rpz.db")
-        get_bluecat_env_data = get_bluecat_env()
+
+        result,domain_list = validate_domains(domain_list)
+        logging.info(f"Result {result}")
+        logging.info(f"new domain list: {domain_list}")
+
+        logging.info(f"Domain list retrieved: {domain_list}")
 
         solutions = [sol.strip() for sol in SOLUTION_IDENTIFIER.split(",")]
         
         for solution in solutions:
 
-
+            logging.info(f"#### Solution: {solution} #####")
             if domain_list:
+
                 logging.info(f"Retrieved {len(domain_list)} domains.")
                 
-                # Check if the file that stored domain list for the last execution doesn't exist
-
                 if check_file_exists(domain_list_file_path):
-                    # check if domain list changed
                     if has_domain_list_changed(domain_list, domain_list_file_path):
                         if solution == "BINDTRANSFER" or solution == "BINDLOCAL":
+                            BIND_SLAVE_IPADDR = get_bind_env()
                             logging.info("Domain list has changed. Generating new RPZ file...")
-                            execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path, domain_list_file_path)
+                            execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path)
                         if solution == "BLUECATAPI":
+                            BLUECAT_ENV_DATA = get_bluecat_env()
                             logging.info("Domain list has changed. Push modifications on BLUECAT Server")
-                            execute_bluecat_api(get_bluecat_env_data, domain_list, domain_list_file_path)
+                            execute_bluecat_api(BLUECAT_ENV_DATA, domain_list)
                     else:
                         logging.info("Domain list has not changed. No need to take actions.")
                 
                 else:
                     if solution == "BINDTRANSFER" or solution == "BINDLOCAL":
-                        logging.info("First execution of BINDLOCAL / BINDTRANSFER")
-                        execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path, domain_list_file_path)
+                        BIND_SLAVE_IPADDR = get_bind_env()
+                        execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path)
                     if solution == "BLUECATAPI":
-                        logging.info("First execution of BLUECATAPI")
-                        execute_bluecat_api(get_bluecat_env_data, domain_list, domain_list_file_path)
+                        BLUECAT_ENV_DATA = get_bluecat_env()
+                        execute_bluecat_api(BLUECAT_ENV_DATA, domain_list)
 
             else:
                 logging.info("No domains retrieved.")

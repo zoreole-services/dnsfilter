@@ -47,5 +47,8 @@ ENV EXECUTION_INTERVAL="30"
 ENV AWS_REGION="eu-west-1"
 ENV VERBOSITY="1"
 
-#CMD ["tail", "-f", "/dev/null"]
+# Expose DNS ports
+EXPOSE 53/tcp
+EXPOSE 53/udp
+
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

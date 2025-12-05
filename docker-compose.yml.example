@@ -3,7 +3,7 @@ services:
     build: .
     container_name: dnsfilter
     volumes:
-      # SOLUTION BINDLOCAL & BINDTRANSFER
+      # SOLUTION BINDLOCAL
       - /etc/bind/dnsfilter_zones:/usr/src/app/zones 
 
     restart: unless-stopped
