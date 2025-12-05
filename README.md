@@ -131,7 +131,6 @@ This mode connects to a **BlueCat BAM** server using its **REST API v2**, and up
 | `BLUECAT_TARGET_BDDS` | - | Yes* | Target BDDS server name |
 | `BLUECAT_RPZONE_NAME` | - | No | Response Policy Zone name |
 
-
 * Those variables are only mandatory if BLUECATAPI solution is selected.
 
 **BlueCat Configuration:**
