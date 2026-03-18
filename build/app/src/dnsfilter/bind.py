@@ -55,21 +55,25 @@ def load_domain_list(file_path: str = "/usr/src/app/zones/domain_list.json") -> 
         return set()
 
 def has_domain_list_changed(new_domain_list: List[str], file_path: str = "/usr/src/app/zones/domain_list.json") -> bool:
-    """
-    Check if the domain list has changed compared to the previously saved list.
-    Args:
-        new_domain_list (List[str]): The new list of domains to compare.
-        file_path (str): Path to the JSON file. Defaults to "/usr/src/app/zones/domain_list.json".
-    Returns:
-        bool: True if the domain list has changed, False otherwise.
-    """
     try:
         old_domain_list = load_domain_list(file_path)
-        new_domain_list_sorted = set(sorted(new_domain_list))
-        return new_domain_list_sorted != old_domain_list
+
+        if not old_domain_list:
+            return True
+
+        new_domain_list_sorted = set(new_domain_list)
+        old_domain_list_set = set(old_domain_list)
+
+        return new_domain_list_sorted != old_domain_list_set
+
+    except FileNotFoundError:
+        return True
+
     except Exception as e:
         logging.error(f"Unexpected error while checking domain list changes: {e}")
         raise
+
+
 
 def is_bind_running():
     """
