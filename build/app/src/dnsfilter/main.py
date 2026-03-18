@@ -160,15 +160,14 @@ def main():
                 logging.info(f"#### Solution: {solution} #####")
                 if domain_list:
                     logging.info(f"Retrieved {len(domain_list)} domains.")
-                    if check_file_exists(domain_list_file_path):
-                        if solution == "BINDTRANSFER" or solution == "BINDLOCAL":
-                            BIND_SLAVE_IPADDR = get_bind_env()
-                            logging.info("Domain list has changed. Generating new RPZ file...")
-                            execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path, DNS_TTL)
-                        if solution == "BLUECATAPI":
-                            BLUECAT_ENV_DATA = get_bluecat_env()
-                            logging.info("Domain list has changed. Push modifications on BLUECAT Server")
-                            execute_bluecat_api(BLUECAT_ENV_DATA, domain_list, DNS_TTL, BLUECAT_RPZONE_NAME)
+                    if solution == "BINDTRANSFER" or solution == "BINDLOCAL":
+                        BIND_SLAVE_IPADDR = get_bind_env()
+                        logging.info("Domain list has changed. Generating new RPZ file...")
+                        execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER, BIND_SLAVE_IPADDR, domain_list, rpz_file_path, DNS_TTL)
+                    if solution == "BLUECATAPI":
+                        BLUECAT_ENV_DATA = get_bluecat_env()
+                        logging.info("Domain list has changed. Push modifications on BLUECAT Server")
+                        execute_bluecat_api(BLUECAT_ENV_DATA, domain_list, DNS_TTL, BLUECAT_RPZONE_NAME)
                 else:
                     logging.info("No domains retrieved.")
             logging.info(f"Pausing for {EXECUTION_INTERVAL} seconds.")
