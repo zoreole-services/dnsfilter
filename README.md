@@ -46,7 +46,7 @@ Before installation, ensure the following components are available:
    cp docker-compose.yaml.example docker-compose.yaml
    ```
 
-   Then edit `docker-compose.yaml` to configure environment variables, ports, and volumes.
+   Then edit the environment files located in env directory, to configure environment variables, ports, and volumes.
 
 ---
 
