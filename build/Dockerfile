@@ -12,6 +12,7 @@ RUN apk add --no-cache \
     py3-pip \
     python3 \
     sudo \
+    tzdata \
     supervisor
 
 # Create the required directory with the right permissions
