@@ -125,17 +125,19 @@ response-policy { zone "rpz"; };
 
 ### Solution 3: BLUECATAPI
 
-This mode connects to a **BlueCat BAM** server using its **REST API v2**, and update its response policies zone.
+This mode connects to a **BlueCat BAM** server using its **REST API v2**, and update its response policies zone (RPZ).
 
-Those variables should be configured on env file located at env/bluecat.env
+All variables must be defined in the environment file located at : env/bluecat.env
 
 | Variable | Default | Required | Description |
 |-----------|----------|-----------|-------------|
 | `BLUECAT_USER` | - | Yes* | BlueCat BAM username |
 | `BLUECAT_PWD` | - | Yes* | BlueCat BAM password |
 | `BLUECAT_IPADDR` | - | Yes* | BlueCat BAM IP address |
-| `BLUECAT_TARGET_BDDS` | - | Yes* | Target BDDS server name |
+| `BLUECAT_TARGET_BDDS` | - | Yes* | Target BDDS servers (`ALL`, `NONE`, or comma-separated list) |
 | `BLUECAT_RPZONE_NAME` | - | No | Response Policy Zone name |
+| `BLUECAT_API_PROTOCOL` | - | Yes* | Protocol used for API connections. Supported values are http and https. |
+
 
 * Those variables are only mandatory if BLUECATAPI solution is selected.
 
