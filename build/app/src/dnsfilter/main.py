@@ -120,10 +120,11 @@ def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[s
 
         if BLUECAT_TARGET_BDDS == "ALL":
             bdds_ids = [srv_id for srv_id, _ in bluecat_server_list]
+
         else:
             bdds_ids = [srv_id for srv_id, srv_name in bluecat_server_list if srv_name in target_names]
             if len(bdds_ids) == 0:
-                logging.error("The target BDDS servers don't match the configured servers.")
+                logging.error("The BLUECAT_TARGET_BDSS variable don't match the configured servers or is set to NONE.")
 
         if len(add_domain_list) > 0 or len(delete_domain_list) > 0:
             deploy(token,bdds_ids,BAM_URL)
