@@ -30,34 +30,37 @@ session.mount("https://", adapter)
 def get_bluecat_env():
     """
     Retrieves BlueCat environment variables from the system's environment.
-    This function fetches the required environment variables for connecting to BlueCat BAM:
-    - BLUECAT_IPADDR: IP address of the BlueCat server.
-    - BLUECAT_USER: Username for authentication.
-    - BLUECAT_PWD: Password for authentication.
-    - BLUECAT_TARGET_BDDS: Target BDDS server(s) for deployment.
-    - BLUECAT_TENANT_NAME: Tenant name for multi-tenancy support.
+
     Returns:
-        dict: A dictionary containing the BlueCat environment data:
+        dict: A dictionary containing:
             - user: BlueCat username.
             - password: BlueCat password.
-            - target_bdds: Target BDDS server(s).
+            - target_bdds: List of target BDDS servers.
             - tenant_name: Tenant name.
-            - bam_url: Base URL for BlueCat API (constructed from BLUECAT_IPADDR).
+            - bam_url: Base URL for BlueCat API.
+
     Raises:
-        BlueCatEnvError: If any required environment variable is missing or an unexpected error occurs.
+        BlueCatEnvError: If any required environment variable is missing
+        or an unexpected error occurs.
     """
-    try :
+    try:
         BLUECAT_IPADDR = os.getenv("BLUECAT_IPADDR")
         BLUECAT_USER = os.getenv("BLUECAT_USER")
         BLUECAT_PWD = os.getenv("BLUECAT_PWD")
-        BLUECAT_TARGET_BDDS = os.getenv("BLUECAT_TARGET_BDDS", "").lower()
         BLUECAT_TENANT_NAME = os.getenv("BLUECAT_TENANT_NAME")
         BLUECAT_API_PROTOCOL = os.getenv("BLUECAT_API_PROTOCOL", "").lower()
+
+        BLUECAT_TARGET_BDDS = [
+            server.strip().lower()
+            for server in os.getenv("BLUECAT_TARGET_BDDS", "").split(",")
+            if server.strip()
+        ]
 
         if BLUECAT_API_PROTOCOL not in ("http", "https"):
             raise BlueCatEnvError(
                 "BLUECAT_API_PROTOCOL must be either 'http' or 'https'"
             )
+
         required_vars = {
             "BLUECAT_IPADDR": BLUECAT_IPADDR,
             "BLUECAT_USER": BLUECAT_USER,
@@ -65,12 +68,20 @@ def get_bluecat_env():
             "BLUECAT_TARGET_BDDS": BLUECAT_TARGET_BDDS,
             "BLUECAT_TENANT_NAME": BLUECAT_TENANT_NAME,
         }
-        missing = [name for name, value in required_vars.items() if not value]
+
+        missing = [
+            name
+            for name, value in required_vars.items()
+            if not value
+        ]
+
         if missing:
             raise BlueCatEnvError(
                 f"Missing environment variables: {', '.join(missing)}"
             )
+            
         BAM_URL = f"{BLUECAT_API_PROTOCOL}://{BLUECAT_IPADDR}/api/v2"
+
         env_data = {
             "user": BLUECAT_USER,
             "password": BLUECAT_PWD,
@@ -78,11 +89,12 @@ def get_bluecat_env():
             "tenant_name": BLUECAT_TENANT_NAME,
             "bam_url": BAM_URL,
         }
-
         return env_data
+
     except BlueCatEnvError as e:
         logging.error(f"BlueCat environment configuration error: {e}")
         raise
+
     except Exception as e:
         logging.exception("Unexpected error while loading BlueCat environment")
         raise BlueCatEnvError(f"Unexpected error: {e}")
