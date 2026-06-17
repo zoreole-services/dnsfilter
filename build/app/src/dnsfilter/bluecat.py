@@ -50,6 +50,7 @@ def get_bluecat_env():
         BLUECAT_TENANT_NAME = os.getenv("BLUECAT_TENANT_NAME")
         BLUECAT_API_PROTOCOL = os.getenv("BLUECAT_API_PROTOCOL", "").lower()
 
+        # Read target BDDS servers as a comma-separated list
         BLUECAT_TARGET_BDDS = [
             server.strip().lower()
             for server in os.getenv("BLUECAT_TARGET_BDDS", "").split(",")
@@ -79,7 +80,7 @@ def get_bluecat_env():
             raise BlueCatEnvError(
                 f"Missing environment variables: {', '.join(missing)}"
             )
-            
+
         BAM_URL = f"{BLUECAT_API_PROTOCOL}://{BLUECAT_IPADDR}/api/v2"
 
         env_data = {
@@ -89,6 +90,7 @@ def get_bluecat_env():
             "tenant_name": BLUECAT_TENANT_NAME,
             "bam_url": BAM_URL,
         }
+
         return env_data
 
     except BlueCatEnvError as e:
@@ -168,55 +170,50 @@ def get_collection_id(token: str,BAM_URL: str) -> List[Dict[str, Any]]:
         logging.error(f"Unexpected error whicle fetching collection ID : {e}")
         raise BlueCatAPIError(f"Unexpected error : {e}")
  
-def get_rpz(token: str, BAM_URL: str) -> Dict[str, Any]:
+def get_rpz(token: str, tenant_id: int, BAM_URL: str) -> Dict[str, Any]:
     """
-    Retrieves the Response Policy Zone (RPZ) named 'dnsfilter' from BlueCat BAM.
-    Args:
-        token (str): Authentication token for BlueCat API.
-        BAM_URL (str): Base URL for the BlueCat API.
-    Returns:
-        dict: A dictionary containing:
-            - count: Number of RPZs found.
-            - rpz_collection_id: ID of the RPZ if found, otherwise "None".
-    Raises:
-        BlueCatNotFoundError: If the RPZ 'dnsfilter' is not found.
-        BlueCatAPIError: If an unexpected error occurs during the API request.
+    Retrieves the Response Policy Zone (RPZ) named 'dnsfilter' from BlueCat BAM for a specific tenant.
     """
+
     try:
         headers = {
-            "Authorization": f'Basic {token}',
+            "Authorization": f"Basic {token}",
             "accept": "application/hal+json",
             "Content-Type": "application/hal+json"
         }
- 
-        r = session.get(url=f"{BAM_URL}/responsePolicies?fields=name%2Cconfiguration.id%2Cid&filter=name%3A%22dnsfilter%22", headers=headers, verify=False, timeout=30)
-        logging.debug(f" Result of get rpz method: {r.text}")
+
+        url = (
+            f"{BAM_URL}/configurations/{tenant_id}/responsePolicies"
+            f"?fields=name,configuration.id,id"
+            f"&filter=name:%22dnsfilter%22"
+        )
+        r = session.get(url=url, headers=headers, verify=False, timeout=30)
+        logging.debug(f"Result of get rpz method: {r.text}")
         resp_json = r.json()
-        count = resp_json.get("count")
-        if (count != 0):
+        count = resp_json.get("count", 0)
+        if count:
             rpz_collection_id = resp_json["data"][0]["id"]
         else:
-            rpz_collection_id = "None"
-        env_data = {
+            rpz_collection_id = None
+        return {
             "count": count,
             "rpz_collection_id": rpz_collection_id,
         }
-        return env_data
-    except IndexError:
-        raise BlueCatNotFoundError("No RPZ named 'dnsfilter' found.")
+
     except requests.exceptions.RequestException as e:
-        logging.error(f"Request error while fetching RPZ : {e}")
-        raise BlueCatAPIError(f"Unexpected request: {e}")
+        logging.error(f"Request error while fetching RPZ: {e}")
+        raise BlueCatAPIError(f"Request error: {e}")
+
     except Exception as e:
-        logging.error(f"Unexpected error while fetching RPZ : {e}")
+        logging.error(f"Unexpected error while fetching RPZ: {e}")
         raise BlueCatAPIError(f"Unexpected error: {e}")
  
-def create_rpz(token: str, collection_id: str, BAM_URL: str, DNS_TTL: int, BLUECAT_RPZONE_NAME: str) -> str:
+def create_rpz(token: str, tenant_id: str, BAM_URL: str, DNS_TTL: int, BLUECAT_RPZONE_NAME: str) -> str:
     """
     Creates a new Response Policy Zone (RPZ) named 'dnsfilter' in BlueCat BAM.
     Args:
         token (str): Authentication token for BlueCat API.
-        collection_id (str): ID of the configuration collection where the RPZ will be created.
+        tenant_id (str): ID of the configuration tenant where the RPZ will be created.
         BAM_URL (str): Base URL for the BlueCat API.
     Returns:
         str: ID of the newly created RPZ.
@@ -236,7 +233,7 @@ def create_rpz(token: str, collection_id: str, BAM_URL: str, DNS_TTL: int, BLUEC
             "ttl": f'{DNS_TTL}'
         }
  
-        r = session.post(url=f"{BAM_URL}/configurations/{collection_id}/responsePolicies", json=data, headers=headers, verify=False, timeout=30)
+        r = session.post(url=f"{BAM_URL}/configurations/{tenant_id}/responsePolicies", json=data, headers=headers, verify=False, timeout=30)
         resp_json = r.json()
         rpz_collection_id = resp_json.get("id")
         if not rpz_collection_id:
@@ -249,6 +246,44 @@ def create_rpz(token: str, collection_id: str, BAM_URL: str, DNS_TTL: int, BLUEC
         logging.error(f"Unexpected error whicle creating RPZ: {e}")
         raise BlueCatAPIError(f"Unexpected error: {e}")
  
+def create_policy_items(token: str,tenant_id: int,rpz_collection_id: int,domain_list: List[str],BAM_URL: str) -> None:
+    """
+    Creates policy items (domains) and attaches them to the specified RPZ under a tenant.
+    """
+
+    try:
+        headers = {
+            "Authorization": f"Basic {token}",
+            "accept": "application/hal+json",
+            "Content-Type": "application/hal+json"
+        }
+
+        for domain in domain_list:
+            data = {
+                "name": domain
+            }
+            url = f"{BAM_URL}/responsePolicies/{rpz_collection_id}/policyItems"
+
+            r = session.post(
+                url=url,
+                json=data,
+                headers=headers,
+                verify=False,
+                timeout=30
+            )
+            time.sleep(0.05)
+            if r.status_code != 201:
+                raise BlueCatAPIError(
+                    f"Policy item creation failed for {domain} : {r.text}"
+                )
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Request error while creating policy items: {e}")
+        raise BlueCatAPIError(f"Request error: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error while creating policy items: {e}")
+        raise BlueCatAPIError(f"Unexpected error: {e}")
+
+
 def create_policy_items(token: str,rpz_collection_id: int,domain_list: List[str],BAM_URL: str) -> None:
     """
     Creates policy items (domains) and attaches them to the specified Response Policy Zone (RPZ).
@@ -279,6 +314,7 @@ def create_policy_items(token: str,rpz_collection_id: int,domain_list: List[str]
     except Exception as e:
         logging.error(f"Unexpected error while creating policy items: {e}")
         raise BlueCatAPIError(f"Unexpected error: {e}")
+
  
 def delete_policy_items(token: str,domain_list: List[str],BAM_URL: str) -> None:
     """

@@ -64,7 +64,7 @@ def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER: str, BIND_SLAVE_IPADDR: s
             run_bind()   
     generate_rpz_file(domain_list, DNS_TTL, rpz_file_path)
 
-def execute_bluecat_api(get_bluecat_env_data: Dict[str, str],domain_list: Set[str],DNS_TTL: int,BLUECAT_RPZONE_NAME: str,) -> None:
+def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[str], DNS_TTL: int, BLUECAT_RPZONE_NAME: str) -> None:
     """
     Execute BLUECATAPI solution
     Args:
@@ -87,80 +87,53 @@ def execute_bluecat_api(get_bluecat_env_data: Dict[str, str],domain_list: Set[st
     BAM_URL = get_bluecat_env_data["bam_url"]
     BLUECAT_TENANT_NAME = get_bluecat_env_data["tenant_name"]
     BLUECAT_TARGET_BDDS = get_bluecat_env_data["target_bdds"]
-    token = login(BLUECAT_USER, BLUECAT_PWD, BAM_URL)
-    get_rpz_data = get_rpz(token, BAM_URL)
-    count = get_rpz_data["count"]
 
-    rpz_collection_id = get_rpz_data["rpz_collection_id"]
+    token = login(BLUECAT_USER, BLUECAT_PWD, BAM_URL)
+
     tenant_list_bam = get_collection_id(token, BAM_URL)
+
     names = [n.strip() for n in BLUECAT_TENANT_NAME.split(",")]
-    tenant_ids = [
-        item["id"]
-        for item in tenant_list_bam
-        if item["name"] in names
-    ]
+    tenant_ids = [item["id"] for item in tenant_list_bam if item["name"] in names]
 
     for tenant_id in tenant_ids:
+
+        get_rpz_data = get_rpz(token,tenant_id, BAM_URL)
+        count = get_rpz_data["count"]
+        rpz_collection_id = get_rpz_data["rpz_collection_id"]
+
         logging.debug(f"Processing tenant ID: {tenant_id}")
         if count == 0:
             logging.info("No existing RPZ found. Creating a new one...")
-            rpz_collection_id = create_rpz(
-                token,
-                tenant_id,
-                BAM_URL,
-                DNS_TTL,
-                BLUECAT_RPZONE_NAME,
-            )
-        bluecat_domain_list = get_policy_items(
-            token,
-            rpz_collection_id,
-            BAM_URL,
-        )
+            rpz_collection_id = create_rpz(token, tenant_id, BAM_URL, DNS_TTL, BLUECAT_RPZONE_NAME)
+
+        bluecat_domain_list = get_policy_items(token, rpz_collection_id, BAM_URL)
         aws_domain_list = domain_list
         add_domain_list = set(aws_domain_list) - set(bluecat_domain_list)
         delete_domain_list = set(bluecat_domain_list) - set(aws_domain_list)
         logging.info(f"Domains to add: {add_domain_list}")
         logging.info(f"Domains to delete: {delete_domain_list}")
 
-        if add_domain_list:
-            create_policy_items(
-                token,
-                rpz_collection_id,
-                add_domain_list,
-                BAM_URL,
-            )
-
-        if delete_domain_list:
-            delete_policy_items(
-                token,
-                delete_domain_list,
-                BAM_URL,
-            )
+        if len(add_domain_list) > 0:
+            create_policy_items(token, rpz_collection_id, add_domain_list, BAM_URL)
+ 
+        if len(delete_domain_list) > 0:
+            delete_policy_items(token, rpz_collection_id, delete_domain_list, BAM_URL)
 
         bluecat_server_list = get_server(token, BAM_URL)
-        target_names = [
-            name.strip().lower()
-            for name in BLUECAT_TARGET_BDDS
-        ]
 
-        if len(target_names) == 1 and target_names[0] == "all":
-            bdds_ids = [
-                srv_id
-                for srv_id, _ in bluecat_server_list
-            ]
+
+        target_names = [name.strip().lower() for name in BLUECAT_TARGET_BDDS ]
+
+        if "all" in target_names :
+            bdds_ids = [srv_id for srv_id, _ in bluecat_server_list]
+
         else:
-            bdds_ids = [
-                srv_id
-                for srv_id, srv_name in bluecat_server_list
-                if srv_name.strip().lower() in target_names
-            ]
+            bdds_ids = [srv_id for srv_id, srv_name in bluecat_server_list if srv_name in target_names]
+            if len(bdds_ids) == 0:
+                logging.error("The BLUECAT_TARGET_BDDS variable don't match the configured servers or is set to NONE.")
 
-            if not bdds_ids:
-                logging.error(
-                    "The BLUECAT_TARGET_BDDS variable does not match any configured server."
-                )
-        if add_domain_list or delete_domain_list:
-            deploy(token, bdds_ids, BAM_URL)
+        if len(add_domain_list) > 0 or len(delete_domain_list) > 0:
+            deploy(token,bdds_ids,BAM_URL)
             logging.info("Configuration deployed.")
         else:
             logging.info("No changes to deploy.")
