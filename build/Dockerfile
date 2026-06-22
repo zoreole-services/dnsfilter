@@ -42,6 +42,9 @@ COPY ./named.conf /etc/bind/named.conf
 
 RUN chown named:named /etc/bind/named.conf
 
+RUN apk add --no-cache libcap \
+    && setcap cap_net_bind_service=ep /usr/sbin/named
+
 USER named
 
 WORKDIR /usr/src/app
