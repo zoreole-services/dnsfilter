@@ -145,6 +145,36 @@ All variables must be defined in the environment file located at : env/bluecat.e
 
 Ensure an **Response Policy Zone** exists in *DNS > DNS View > RP Zones* and that the policy created by the script (default: `dnsfilter`) is attached to it.
 
+
+### Solution 4: YAMUAPI
+
+This mode connects to one or more **Yamu Smart DDI** appliances using their REST API (HTTP Basic Auth), and creates/updates **Forced Resolution** rules to enforce domain filtering.
+
+All variables must be defined in the environment file located at: env/yamu.env
+
+| Variable | Default | Required | Description |
+|-----------|----------|-----------|-------------|
+| `SRV<N>` | - | Yes* | One environment to synchronize (`SRV1`, `SRV2`, ... — at least one required). Comma-separated line: `YAMU_USER,YAMU_PWD,YAMU_VIEW_NAME,YAMU_API_PROTOCOL,YAMU_SCOPE,YAMU_IPADDR` (see field details below). |
+
+**`SRV<N>` field order** (comma-separated):
+
+| Variable | Default | Required | Description |
+|-----------|----------|-----------|-------------|
+| `YAMU_USER` | - | Yes* | Yamu appliance username |
+| `YAMU_PWD` | - | Yes* | Yamu appliance password |
+| `YAMU_VIEW_NAME` | - | Yes* | Yamu DNS view name. Several view can be listed separated by `;` |
+| `YAMU_API_PROTOCOL` | - | Yes* | Protocol used for API connections. Supported values are `http` and `https` |
+| `YAMU_SCOPE` | - | Yes* | Effect range scope (Device Group) targeted on the appliance. Several scopes can be listed, separated by `;` |
+| `YAMU_IPADDR` | - | Yes* | Yamu appliance IP address |
+
+If a `SRV<N>` line lists several `view_name` and/or `scope` values, one environment is generated for every combination (e.g. 2 views x 2 scopes = 4 environments) on that appliance.
+
+
+**Yamu Configuration:**
+
+Ensure the target **Device Group** (scope) and **DNS View** already exist on the appliance (*Administration > Device Management* and *DNS > DNS Views*). Rules are created directly on literal domains (no Domain List/Domain Type required) and tagged with the remark `C+ DNSFilter`, which the script uses to safely identify and delete only the rules it manages on subsequent runs.
+
+
 ---
 
 ## Usage

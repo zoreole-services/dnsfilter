@@ -34,6 +34,15 @@ from bind import (
     save_domain_list,
     has_domain_list_changed,
 )
+
+from yamu import (
+    get_forced_resolution_domains,
+    get_forced_resolution_entries,
+    create_forced_resolution,
+    delete_forced_resolution,
+    get_yamu_env,
+)
+
 from exceptions import (
     BlueCatError,
     BindError,
@@ -41,6 +50,8 @@ from exceptions import (
     ConfigError,
     CoreError,
 )
+
+
 
 def execute_bindlocal_or_transfer(SOLUTION_IDENTIFIER: str, BIND_SLAVE_IPADDR: str, domain_list: Iterable[str], rpz_file_path: str, DNS_TTL: int) -> None:
     """
@@ -138,9 +149,53 @@ def execute_bluecat_api(get_bluecat_env_data: Dict[str, str], domain_list: Set[s
         else:
             logging.info("No changes to deploy.")
 
+
+def execute_yamu_api(environments: list, aws_domain_list: Set[str], DNS_TTL: int, remark: str = "C+ DNSFilter") -> None:
+    """
+    Execute YAMUAPI solution
+
+    Args:
+        environments (list[dict]): List of environment configs (name,url, username, password, scope, view_name), as produced by get_yamu_env().
+        aws_domain_list (set): Desired set of domains.
+        DNS_TTL (int): TTL to apply to newly created rules.
+        remark (str, optional): Remark used to tag rules managed by this script.
+    Raises:
+        YamuAPIError: If a Yamu API request fails.
+    Returns:
+        None
+    """
+    
+    aws_domain_list = set(aws_domain_list)
+
+    for env in environments:
+
+        # Get the forced resolution entries already configured on the YAMU server
+        entries = get_forced_resolution_entries(
+            url=env["url"], username=env["username"], password=env["password"], scope=env["scope"], view_name=env["view_name"],
+        )
+
+        # Filter the forced resolution entries per the assigned remark
+        all_yamu_domains = {e["domain"] for e in entries if "domain" in e}
+        managed_domains = {e["domain"] for e in entries if "domain" in e and e.get("remark") == remark}
+
+        add_domain_list = aws_domain_list - all_yamu_domains
+        delete_domain_list = managed_domains - aws_domain_list
+
+        logging.info(f"[{env['name']}] Domains to add: {add_domain_list}")
+        logging.info(f"[{env['name']}] Domains to delete: {delete_domain_list}")
+
+        if len(add_domain_list) > 0:
+            create_forced_resolution(url=env["url"], domains=list(add_domain_list), scope=env["scope"], view_name=env["view_name"], username=env["username"], password=env["password"], ttl=DNS_TTL, policyType="nodata", remark=remark,)
+            logging.info(f"[{env['name']}] Domains {add_domain_list} added")
+
+        if len(delete_domain_list) > 0:
+            for delete_domain in list(delete_domain_list):
+                delete_forced_resolution(domain_or_library=delete_domain, scope=env["scope"], url=env["url"], username=env["username"], password=env["password"],view_name=env["view_name"], entry_type="domain",)
+                logging.info(f"[{env['name']}] Domain {delete_domain} deleted")
+
 def main():
     try:
-        DNS_TTL = os.getenv("DNS_TTL")
+        DNS_TTL = int(os.getenv("DNS_TTL"))
         BLUECAT_RPZONE_NAME = os.getenv("BLUECAT_RPZONE_NAME")
         SOLUTION_IDENTIFIER = get_solutionid_env()
         EXECUTION_INTERVAL = get_interval_env()
@@ -175,6 +230,11 @@ def main():
                         BLUECAT_ENV_DATA = get_bluecat_env()
                         logging.info("Domain list has changed. Push modifications on BLUECAT Server")
                         execute_bluecat_api(BLUECAT_ENV_DATA, domain_list, DNS_TTL, BLUECAT_RPZONE_NAME)
+
+                    if solution == "YAMUAPI":
+                        YAMU_ENVIRONMENTS = get_yamu_env()
+                        logging.info("Domain list has changed. Push modifications on YAMU Server")
+                        execute_yamu_api(YAMU_ENVIRONMENTS, domain_list, DNS_TTL)
                 else:
                     logging.info("No domains retrieved.")
             logging.info(f"Pausing for {EXECUTION_INTERVAL} seconds.")

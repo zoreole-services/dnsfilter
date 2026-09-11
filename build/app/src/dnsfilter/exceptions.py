@@ -1,3 +1,15 @@
+class YamuError(Exception):
+    """Basic class for all exceptions."""
+    pass
+
+class YamuEnvError(YamuError):
+    """Error related to fetching env variables process."""
+    pass
+
+class YamuAPIError(YamuError):
+    """Error related to API calls."""
+    pass
+
 class BlueCatError(Exception):
     """Basic class for all exceptions."""
     pass
